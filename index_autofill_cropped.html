@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guard House AI Registration</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background-color: #f0fdf4; }
+    label { display: block; margin-top: 10px; font-weight: bold; }
+    input, button { padding: 8px; margin-top: 5px; width: 100%; }
+    video, canvas, img { width: 100%; max-width: 100%; margin-top: 10px; border: 1px solid #ccc; }
+    #loading { color: green; font-style: italic; }
+  </style>
+</head>
+<body>
+  <h2>📋 Pendaftaran Guard House (AI Autofill)</h2>
+
+  <label>Nama Penuh:</label>
+  <input type="text" id="nama" placeholder="Nama akan diisi automatik..." />
+
+  <label>No. MyKad / Lesen:</label>
+  <input type="text" id="noid" placeholder="No. ID akan diisi automatik..." />
+
+  <label>Ambil Gambar MyKad/Lesen:</label>
+  <button onclick="startCamera()">Buka Kamera</button>
+  <video id="video" autoplay playsinline></video>
+  <button onclick="captureImage()">📸 Ambil Gambar</button>
+  <canvas id="canvas" style="display:none;"></canvas>
+  <img id="preview" src="" alt="Preview" />
+  <p id="loading"></p>
+
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const preview = document.getElementById("preview");
+    const namaInput = document.getElementById("nama");
+    const noidInput = document.getElementById("noid");
+    const loadingText = document.getElementById("loading");
+    let stream;
+
+    async function startCamera() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { exact: "environment" } }
+        });
+        video.srcObject = stream;
+      } catch (err) {
+        alert("Gagal buka kamera: " + err);
+      }
+    }
+
+    function captureImage() {
+      const context = canvas.getContext("2d");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0);
+
+      // Crop kawasan tengah gambar
+      const cropW = canvas.width * 0.8;
+      const cropH = canvas.height * 0.4;
+      const cropX = (canvas.width - cropW) / 2;
+      const cropY = (canvas.height - cropH) / 2;
+      const cropped = context.getImageData(cropX, cropY, cropW, cropH);
+
+      // Buat canvas baru untuk cropped image
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = cropW;
+      tempCanvas.height = cropH;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.putImageData(cropped, 0, 0);
+      const croppedImage = tempCanvas.toDataURL("image/png");
+
+      preview.src = croppedImage;
+      loadingText.textContent = "🔍 Memproses gambar...";
+
+      Tesseract.recognize(
+        croppedImage,
+        'eng',
+        { logger: m => console.log(m) }
+      ).then(({ data: { text } }) => {
+        console.log("OCR Result:", text);
+        loadingText.textContent = "✅ Selesai";
+
+        const lines = text.split("\n");
+        const blacklist = ["LESEN", "MEMANDU", "MALAYSIA", "KAD", "PENGENALAN"];
+        let nama = "";
+        let mykad = "";
+
+        lines.forEach(line => {
+          const namaMatch = line.match(/[A-Z ]{8,}/);
+          const icMatch = line.match(/\b\d{6}-?\d{2}-?\d{4}\b|\b\d{12}\b/);
+
+          if (namaMatch && !nama) {
+            const isBlacklisted = blacklist.some(word => namaMatch[0].includes(word));
+            if (!isBlacklisted) nama = namaMatch[0].trim();
+          }
+
+          if (icMatch && !mykad) {
+            mykad = icMatch[0].replace(/-/g, '');
+          }
+        });
+
+        namaInput.value = nama;
+        noidInput.value = mykad;
+      });
+    }
+  </script>
+</body>
+</html>
