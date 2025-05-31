@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sensory AI Registration</title>
+  <style>
+    body {
+      background-color: #eefaf0;
+      font-family: Arial, sans-serif;
+      text-transform: uppercase;
+    }
+    h1 {
+      text-align: center;
+      color: #276738;
+    }
+    form {
+      max-width: 480px;
+      margin: auto;
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    input[type="text"],
+    input[type="tel"],
+    select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      text-transform: uppercase;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 20px;
+      background-color: #276738;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    footer {
+      margin-top: 30px;
+      text-align: center;
+      font-size: 12px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>
+    📋 Sensory Residence<br />Guard House Registration 2025
+  </h1>
+  <form>
+    <label for="photo">Take Photo of MyKad/License:</label>
+    <button type="button" onclick="openCamera()">Take Photo</button>
+
+    <label for="timestamp">Timestamp (Auto-Filled):</label>
+    <input type="text" id="timestamp" readonly />
+
+    <label for="regnum">Registration Number:</label>
+    <input type="text" id="regnum" />
+
+    <label for="contact">Contact Number:</label>
+    <input type="tel" id="contact" />
+    <button type="button" onclick="makeCall()">📞 Call This Number</button>
+
+    <label for="category">Category:</label>
+    <select id="category">
+      <option>Owner</option>
+      <option>Tenant</option>
+      <option>Grab Food</option>
+      <option>Food Panda</option>
+      <option>MCD Food Delivery</option>
+      <option>Shopee Food</option>
+      <option>Shopee Express</option>
+      <option>J&T Express</option>
+      <option>Flash Express</option>
+      <option>Lazada</option>
+      <option>Lalamove</option>
+      <option>GDEX</option>
+      <option>E-Hailing</option>
+      <option>Drop Off/Pick Up</option>
+      <option>Other</option>
+    </select>
+
+    <label for="tower">Tower:</label>
+    <select id="tower">
+      <option>TOWER A</option>
+      <option>TOWER B</option>
+    </select>
+
+    <button type="submit">Submit</button>
+  </form>
+  <footer>POWERED BY MRED TECH</footer>
+
+  <script>
+    document.getElementById("timestamp").value = new Date().toLocaleString();
+    function makeCall() {
+      const num = document.getElementById("contact").value;
+      if (num) {
+        window.location.href = `tel:${num}`;
+      }
+    }
+    function openCamera() {
+      alert("Camera function will be implemented.");
+    }
+  </script>
+</body>
+</html>
