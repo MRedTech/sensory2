@@ -534,76 +534,67 @@ if (mykadInput) {
       }
     }
 
-    // === Core: Snap + Crop ikut guideline ===
+    //Function capture image AI
     function captureImage() {
-      if (!video) return;
-      // Dapatkan dimensi guideline overlay
-      const container = document.querySelector('.camera-container');
-      const guideline = document.querySelector('.guideline');
-      const rect = guideline.getBoundingClientRect();
-      const contRect = container.getBoundingClientRect();
+  if (!video) return;
+  const container = document.querySelector('.camera-container');
+  const guideline = document.querySelector('.guideline');
+  const rect = guideline.getBoundingClientRect();
+  const contRect = container.getBoundingClientRect();
+  const ratioLeft = (rect.left - contRect.left) / contRect.width;
+  const ratioTop = (rect.top - contRect.top) / contRect.height;
+  const ratioWidth = rect.width / contRect.width;
+  const ratioHeight = rect.height / contRect.height;
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const cropX = canvas.width * ratioLeft;
+  const cropY = canvas.height * ratioTop;
+  const cropW = canvas.width * ratioWidth;
+  const cropH = canvas.height * ratioHeight;
+  const cropCanvas = document.createElement('canvas');
+  cropCanvas.width = cropW;
+  cropCanvas.height = cropH;
+  cropCanvas.getContext('2d').drawImage(
+    canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH
+  );
+  const compressed = cropCanvas.toDataURL('image/jpeg', 0.7);
+  document.getElementById('preview').src = compressed;
+  document.getElementById('imageContainer').style.display = 'block';
 
-      // Ratio guideline dalam kamera
-      const ratioLeft = (rect.left - contRect.left) / contRect.width;
-      const ratioTop = (rect.top - contRect.top) / contRect.height;
-      const ratioWidth = rect.width / contRect.width;
-      const ratioHeight = rect.height / contRect.height;
+  // ==== AI Vision OCR + VERIFICATION ====
+  (async () => {
+    try {
+      document.body.style.cursor = 'progress';
+      const proxyUrl = "https://sensory-vision.edreborn86.workers.dev";
+      const res = await fetch(proxyUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: compressed.split(",")[1] })
+      });
+      const result = await res.json();
+      document.body.style.cursor = 'default';
 
-      // Capture full frame, crop ikut ratio guideline
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      // Crop ikut guideline (pixel calculation)
-      const cropX = canvas.width * ratioLeft;
-      const cropY = canvas.height * ratioTop;
-      const cropW = canvas.width * ratioWidth;
-      const cropH = canvas.height * ratioHeight;
-
-      // Create crop canvas
-      const cropCanvas = document.createElement('canvas');
-      cropCanvas.width = cropW;
-      cropCanvas.height = cropH;
-      cropCanvas.getContext('2d').drawImage(
-        canvas,
-        cropX, cropY, cropW, cropH,
-        0, 0, cropW, cropH
-      );
-
-      // Compress to JPEG, 0.7 quality
-      const compressed = cropCanvas.toDataURL('image/jpeg', 0.7);
-
-      // Preview + watermark + autofill (fungsi asal KEKAL, tak sentuh)
-      const preview = document.getElementById('preview');
-      preview.src = compressed;
-      document.getElementById('imageContainer').style.display = 'block';
-
-      // === HANTAR KE GOOGLE VISION PROXY (KEKAL FUNGSI ASAL) ===
-      (async () => {
-        try {
-          document.body.style.cursor = 'progress';
-          const proxyUrl = "https://sensory-vision.edreborn86.workers.dev";
-          const res = await fetch(proxyUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ image: compressed.split(",")[1] })
-          });
-          const result = await res.json();
-          document.body.style.cursor = 'default';
-          // === Autofill nama & MyKad/Passport ===
-          if (result.name) document.getElementById('namePassport').value = result.name.toUpperCase();
-          if (result.idnum) document.getElementById('mykadPassport').value = result.idnum.toUpperCase();
-        } catch (err) {
-          document.body.style.cursor = 'default';
-          alert("Autofill GAGAL: " + err.message);
-        }
-      })();
+      // --- AI Smart OCR Verification di sini! ---
+      if (!verifyOcrResult(result)) {
+        // Jika tidak valid, jangan autofill, jangan tutup kamera
+        return;
+      }
+      // Autofill jika valid
+      if (result.name) document.getElementById('namePassport').value = result.name.toUpperCase();
+      if (result.idnum) document.getElementById('mykadPassport').value = result.idnum.toUpperCase();
 
       closeCameraModal();
+    } catch (err) {
+      document.body.style.cursor = 'default';
+      alert("Autofill GAGAL: " + err.message);
+      closeCameraModal();
     }
-
+  })();
+    }
+    
     // Compress & preview gambar sebelum submit (fungsi fallback input file asal)
     document.getElementById('imageInput').addEventListener('change', function(event) {
       const file = event.target.files[0];
@@ -1047,6 +1038,43 @@ function setSubmitBtnLoading(isLoading) {
     btn.disabled = false;
     btn.innerHTML = `SUBMIT`;
   }
+}
+    // ==== AI Smart OCR Verification ====
+function isMyKadPattern(ic) {
+  // Format: 6 digit - 2 digit - 4 digit atau 12 digit tanpa dash
+  return /^(\d{6}-?\d{2}-?\d{4})$/.test(ic) || /^(\d{12})$/.test(ic);
+}
+function isLesenPattern(lesen) {
+  // Format: 1 huruf + 8-9 digit
+  return /^[A-Z]\d{8,9}$/.test(lesen);
+}
+function isPassportPattern(passport) {
+  // Format: 1-2 huruf + 6-9 digit
+  return /^[A-Z]{1,2}\d{6,9}$/.test(passport);
+}
+function isValidName(name) {
+  return (name && name.length >= 5 && /^[A-Z \-']+$/i.test(name));
+}
+
+// ==== FUNCTION VERIFY RESULT (Panggil lepas dapat OCR) ====
+function verifyOcrResult(ocr) {
+  let ic = (ocr.idnum || '').replace(/\s+/g, '');
+  let name = ocr.name || '';
+  // AI pattern check (MyKad/Lesen/Passport)
+  let valid =
+    (isMyKadPattern(ic) || isLesenPattern(ic) || isPassportPattern(ic))
+    && isValidName(name);
+
+  if (!valid) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'DOCUMENT INVALID',
+      text: 'The system could not verify your ID or Name. Please retake photo or check your document.',
+      confirmButtonColor: '#e83939'
+    });
+    return false;
+  }
+  return true;
 }
 
 </script>
