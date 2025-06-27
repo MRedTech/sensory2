@@ -1068,11 +1068,18 @@ function verifyOcrResult(ocr) {
 
   if (!valid) {
     Swal.fire({
-      icon: 'warning',
-      title: 'DOCUMENT INVALID',
-      text: 'The system could not verify your ID or Name. Please retake photo or check your document.',
-      confirmButtonColor: '#e83939'
-    });
+  icon: 'warning',
+  title: 'DOCUMENT INVALID',
+  text: 'The system could not verify your ID or Name. Please retake photo or check your document.',
+  confirmButtonColor: '#e83939',
+  width: 280, 
+  customClass: {
+    popup: 'shadow-2xl px-7 pt-7 pb-6' 
+  },
+  willOpen: (popup) => {
+    popup.style.borderRadius = '14px';
+  }
+});
     return false;
   }
   return true;
