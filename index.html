@@ -564,7 +564,10 @@ if (mykadInput) {
   document.getElementById('preview').src = compressed;
   document.getElementById('imageContainer').style.display = 'block';
 
-  // ==== AI Vision OCR + VERIFICATION ====
+  // **CLOSE CAMERA MODAL TERUS LEPAS SNAP**
+  closeCameraModal();
+
+  // === Hantar ke Google Vision untuk autofill + AI VERIFY ===
   (async () => {
     try {
       document.body.style.cursor = 'progress';
@@ -579,18 +582,16 @@ if (mykadInput) {
 
       // --- AI Smart OCR Verification di sini! ---
       if (!verifyOcrResult(result)) {
-        // Jika tidak valid, jangan autofill, jangan tutup kamera
+        // Jika tak valid, popup terus — user nampak!
         return;
       }
       // Autofill jika valid
       if (result.name) document.getElementById('namePassport').value = result.name.toUpperCase();
       if (result.idnum) document.getElementById('mykadPassport').value = result.idnum.toUpperCase();
 
-      closeCameraModal();
     } catch (err) {
       document.body.style.cursor = 'default';
       alert("Autofill GAGAL: " + err.message);
-      closeCameraModal();
     }
   })();
     }
