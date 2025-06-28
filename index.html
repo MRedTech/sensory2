@@ -3,6 +3,7 @@
 <head>
   <title>SECURE ENTRY SYSTEM</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/@underdog-tech/cardscan@1.0.4/dist/cardscan.min.js"></script>
   <style>
     body {
   font-family: Arial, sans-serif;
@@ -543,78 +544,77 @@ option[value=""] {
     // KEMASKINI FUNGSI captureImage()
   function captureImage() {
   const video = document.getElementById('camera-video');
-  const cameraContainer = document.querySelector('.camera-container');
-  const guideline = document.querySelector('.guideline');
-
-    // Dapatkan size sebenar video
   const videoW = video.videoWidth;
   const videoH = video.videoHeight;
 
-    // Buat canvas untuk tangkap gambar penuh video
+  // Tangkap gambar penuh dari kamera ke canvas
   const canvas = document.createElement('canvas');
   canvas.width = videoW;
   canvas.height = videoH;
-  canvas.getContext('2d').drawImage(video, 0, 0, videoW, videoH);
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, videoW, videoH);
 
-    // Dapatkan ratio guideline dalam container kamera
-  const contRect = cameraContainer.getBoundingClientRect();
-  const guideRect = guideline.getBoundingClientRect();
+  // Convert canvas ke blob supaya boleh process dengan Cardscan AI
+  canvas.toBlob(function(blob) {
+    const reader = new FileReader();
+    reader.onload = async function() {
+      const img = new Image();
+      img.onload = async function() {
+        // AI Card Detection (cardscan.js)
+        const result = await Cardscan.scanImage(img);
+        if (result.card) {
+          const { left, top, width, height } = result.card;
+          // Crop ikut kawasan kad detected
+          const cropCanvas = document.createElement('canvas');
+          cropCanvas.width = width;
+          cropCanvas.height = height;
+          cropCanvas.getContext('2d').drawImage(
+            img, left, top, width, height, 0, 0, width, height
+          );
+          // Hasil crop
+          const croppedImage = cropCanvas.toDataURL('image/jpeg', 0.85);
 
-  const ratioLeft = (guideRect.left - contRect.left) / contRect.width;
-  const ratioTop = (guideRect.top - contRect.top) / contRect.height;
-  const ratioWidth = guideRect.width / contRect.width;
-  const ratioHeight = guideRect.height / contRect.height;
+          // Papar hasil crop
+          document.getElementById('preview').src = croppedImage;
+          document.getElementById('imageContainer').style.display = 'flex';
 
-    // Kira saiz dan posisi crop ikut guideline
-  const cropX = Math.round(canvas.width * ratioLeft);
-  const cropY = Math.round(canvas.height * ratioTop);
-  const cropW = Math.round(canvas.width * ratioWidth);
-  const cropH = Math.round(canvas.height * ratioHeight);
+          // Tutup kamera modal
+          closeCameraModal();
 
-    // Buat canvas baru untuk gambar crop
-  const cropCanvas = document.createElement('canvas');
-  cropCanvas.width = cropW;
-  cropCanvas.height = cropH;
-  cropCanvas.getContext('2d').drawImage(
-    canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH
-  );
+          // Hantar ke Google Vision untuk autofill
+          (async () => {
+            try {
+              document.body.style.cursor = 'progress';
+              const proxyUrl = "https://sensory-vision.edreborn86.workers.dev";
+              const res = await fetch(proxyUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ image: croppedImage.split(",")[1] })
+              });
+              const result = await res.json();
+              document.body.style.cursor = 'default';
 
-    // Hasil gambar crop siap compress
-  const croppedImage = cropCanvas.toDataURL('image/jpeg', 0.85);
+              if (!verifyOcrResult(result)) return;
+              if (result.name) document.getElementById('namePassport').value = result.name.toUpperCase();
+              if (result.idnum) document.getElementById('mykadPassport').value = result.idnum.toUpperCase();
 
-    // Papar preview gambar yang sudah di-crop
-  document.getElementById('preview').src = croppedImage;
-  document.getElementById('imageContainer').style.display = 'flex';
+            } catch (err) {
+              document.body.style.cursor = 'default';
+              alert("Autofill GAGAL: " + err.message);
+            }
+          })();
 
-    // Tutup modal kamera
-  closeCameraModal();
-
-    // === Hantar ke Google Vision untuk autofill + AI VERIFY ===
-  (async () => {
-    try {
-      document.body.style.cursor = 'progress';
-      const proxyUrl = "https://sensory-vision.edreborn86.workers.dev";
-      const res = await fetch(proxyUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: croppedImage.split(",")[1] })
-      });
-      const result = await res.json();
-      document.body.style.cursor = 'default';
-
-      // --- AI Smart OCR Verification di sini! ---
-      if (!verifyOcrResult(result)) return;
-      // Autofill jika valid
-      if (result.name) document.getElementById('namePassport').value = result.name.toUpperCase();
-      if (result.idnum) document.getElementById('mykadPassport').value = result.idnum.toUpperCase();
-
-    } catch (err) {
-      document.body.style.cursor = 'default';
-      alert("Autofill GAGAL: " + err.message);
-    }
-    })();
-    }
-  
+        } else {
+          // Kalau tak jumpa kad/pasport
+          alert('Kad/pasport tidak dapat dikesan. Sila ambil gambar semula, pastikan dokumen jelas dan penuh dalam kamera.');
+        }
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(blob);
+  }, 'image/jpeg', 0.9)
+  }
+    
     // Compress & preview gambar sebelum submit (fungsi fallback input file asal)
     document.getElementById('imageInput').addEventListener('change', function(event) {
       const file = event.target.files[0];
