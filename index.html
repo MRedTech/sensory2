@@ -397,6 +397,16 @@ option[value=""] {
     </div>
     <div style="height:3px;width:60px;margin:0 auto 4px auto;background:linear-gradient(90deg,#3bd97b 20%,#2b7a2b 80%);border-radius:2px;"></div>
   </div>
+
+  <!-- === MINIMAL SEARCH RECORD === -->
+<div class="search-minicard">
+  <div class="search-mini-title">
+    <span class="search-emoji">🔎</span>
+    <span>SEARCH RECORD</span>
+  </div>
+  <input id="searchUniversal" type="text" placeholder="MYKAD / PASSPORT / REG NO" autocomplete="off" class="search-mini-input" style="font-weight:bold;">
+  <button id="searchButton" class="btn-3d search-mini-btn" type="button" onclick="handleUniversalSearch()">SEARCH</button>
+</div>
   <div class="top-action">
     <button type="button" id="takePhotoBtn" class="btn-3d" onclick="openCamera()">TAKE PICTURE</button>
     <span class="photo-label">Take photo of MyKad/Licence</span>
