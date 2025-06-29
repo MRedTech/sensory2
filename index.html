@@ -249,11 +249,17 @@ option[value=""] {
   display: flex; justify-content: center; align-items: center; flex-direction: column;
 }
 .camera-container {
-  position: relative; width: 94vw; max-width: 400px; aspect-ratio: 4/3;
-  background: #000; border-radius: 14px; overflow: hidden;
+  position: relative;
+  width: 94vw;
+  max-width: 400px;
+  aspect-ratio: 4/3;
+  background: #000;
+  border-radius: 14px;
+  overflow: hidden;
 }
 #camera-video {
-  position: absolute; left: 0; top: 0;
+  position: absolute;
+  top: 0; left: 0;
   width: 100%; height: 100%;
   object-fit: cover;
   border-radius: 14px;
@@ -262,10 +268,11 @@ option[value=""] {
 }
 .guideline {
   position: absolute;
+  border: 3px solid #28cc6c;
+  border-radius: 8px;
   left: 4%; top: 4%; width: 92%; height: 92%;
-  border: 3px solid #28cc6c; border-radius: 8px;
-  pointer-events: none; box-sizing: border-box;
-  box-shadow: 0 0 12px #28cc6c77;
+  pointer-events: none;
+  box-sizing: border-box;
 }
 .close-cam-btn {
   position: absolute; top: 10px; right: 13px; z-index: 100;
@@ -540,34 +547,25 @@ option[value=""] {
   const cameraContainer = document.querySelector('.camera-container');
   const guideline = document.querySelector('.guideline');
 
-  // LOG RESOLUTION UNTUK DEBUG
-  console.log('VIDEO', video.videoWidth, video.videoHeight);
-
-  // Tangkap gambar penuh dari video
-  const videoW = video.videoWidth;
-  const videoH = video.videoHeight;
-
-  // Buat canvas penuh
-  const canvas = document.createElement('canvas');
-  canvas.width = videoW;
-  canvas.height = videoH;
-  canvas.getContext('2d').drawImage(video, 0, 0, videoW, videoH);
-
-  // Kira posisi & saiz guideline dalam container kamera
+  // --- Ambil snapshot ikut saiz container (bukan native video frame) ---
   const contRect = cameraContainer.getBoundingClientRect();
   const guideRect = guideline.getBoundingClientRect();
+  const containerW = Math.round(contRect.width);
+  const containerH = Math.round(contRect.height);
 
-  const ratioLeft = (guideRect.left - contRect.left) / contRect.width;
-  const ratioTop = (guideRect.top - contRect.top) / contRect.height;
-  const ratioWidth = guideRect.width / contRect.width;
-  const ratioHeight = guideRect.height / contRect.height;
+  // 1. Snapshot keseluruhan container
+  const canvas = document.createElement('canvas');
+  canvas.width = containerW;
+  canvas.height = containerH;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, containerW, containerH); // snapshot dari view container
 
-  const cropX = Math.round(canvas.width * ratioLeft);
-  const cropY = Math.round(canvas.height * ratioTop);
-  const cropW = Math.round(canvas.width * ratioWidth);
-  const cropH = Math.round(canvas.height * ratioHeight);
+  // 2. Crop ikut guideline (dalam coordinate container)
+  const cropX = Math.round(guideRect.left - contRect.left);
+  const cropY = Math.round(guideRect.top - contRect.top);
+  const cropW = Math.round(guideRect.width);
+  const cropH = Math.round(guideRect.height);
 
-  // Buat canvas baru untuk hasil crop
   const cropCanvas = document.createElement('canvas');
   cropCanvas.width = cropW;
   cropCanvas.height = cropH;
@@ -575,19 +573,17 @@ option[value=""] {
     canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH
   );
 
-  // Preview hasil crop
+  // 3. Preview hasil crop
   const croppedImage = cropCanvas.toDataURL('image/jpeg', 0.88);
   document.getElementById('preview').src = croppedImage;
   document.getElementById('imageContainer').style.display = 'flex';
-
   closeCameraModal();
 
-  // === Hantar ke Google Vision untuk autofill + AI VERIFY (AI Smart) ===
+  // 4. === AI Smart: Hantar ke Google Vision untuk autofill + validation ===
   (async () => {
     try {
       document.body.style.cursor = 'progress';
       const proxyUrl = "https://sensory-vision.edreborn86.workers.dev";
-      // SPEED UP: hantar imej size kecil (resize) untuk OCR
       const base64 = croppedImage.split(",")[1];
       const res = await fetch(proxyUrl, {
         method: "POST",
@@ -603,11 +599,14 @@ option[value=""] {
       const result = await res.json();
       document.body.style.cursor = 'default';
 
-      // === AI SMART VERIFICATION (Penambahbaikan AI, filter, normalize, autofill) ===
+      // === AI SMART VERIFICATION ===
       if (!verifyOcrResult(result)) return;
-      // AI Clean-up untuk nama & no kad
-      if (result.name) document.getElementById('namePassport').value = result.name.replace(/[^A-Z \-']/gi,'').toUpperCase();
-      if (result.idnum) document.getElementById('mykadPassport').value = result.idnum.replace(/[^\d\-]/g,'').toUpperCase();
+
+      // Bersihkan autofill (auto uppercase, buang char pelik)
+      if (result.name)
+        document.getElementById('namePassport').value = result.name.replace(/[^A-Z \-']/gi,'').toUpperCase();
+      if (result.idnum)
+        document.getElementById('mykadPassport').value = result.idnum.replace(/[^\d\-]/g,'').toUpperCase();
 
     } catch (err) {
       document.body.style.cursor = 'default';
