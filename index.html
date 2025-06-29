@@ -241,30 +241,29 @@ option[value=""] {
   font-family: Arial, sans-serif;
   font-weight: bold;
 }
-
-/* === KAMERA MODAL & GUIDELINE === */
+    
+/* === MODAL KAMERA DAN GUIDELINE === */
 .camera-modal {
   position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
   background: rgba(0,0,0,0.85); z-index: 99999;
-  display: flex; justify-content: center; align-items: center;
-  flex-direction: column;
+  display: flex; justify-content: center; align-items: center; flex-direction: column;
 }
 .camera-container {
   position: relative; width: 94vw; max-width: 400px; aspect-ratio: 4/3;
-  background: #000; border-radius: 14px; overflow: hidden; display: flex; align-items: center; justify-content: center;
+  background: #000; border-radius: 14px; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
 }
 #camera-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 14px;
-  background: #222;
-  display: block;
+  width: 100%; height: 100%; object-fit: cover;
+  border-radius: 14px; background: #222; display: block;
 }
 .guideline {
-  position: absolute; border: 3px solid #28cc6c; border-radius: 8px;
+  position: absolute;
+  border: 3px solid #28cc6c;
+  border-radius: 8px;
   left: 4%; top: 4%; width: 92%; height: 92%;
   pointer-events: none; box-sizing: border-box;
+  box-shadow: 0 0 12px #28cc6c77;
 }
 .close-cam-btn {
   position: absolute; top: 10px; right: 13px; z-index: 100;
@@ -273,32 +272,21 @@ option[value=""] {
   box-shadow: 0 2px 10px #aaa;
 }
 .capture-btn-3d {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  display: flex; justify-content: center; align-items: center;
   background: linear-gradient(145deg, #41e671 0%, #176B39 100%);
-  color: #fff;
-  border: none;
-  border-radius: 100%;
-  width: 60px;
-  height: 60px;
-  font-size: 17px;
-  font-family: Arial, sans-serif;
-  font-weight: bold;
-  box-shadow: 0 3px 10px #8ed5a3, 0 1.5px 3px #3333;
-  letter-spacing: 1.5px;
-  cursor: pointer;
-  transition: box-shadow 0.18s, transform 0.1s;
+  color: #fff; border: none; border-radius: 100%;
+  width: 60px; height: 60px; font-size: 17px; font-family: Arial, sans-serif;
+  font-weight: bold; box-shadow: 0 3px 10px #8ed5a3, 0 1.5px 3px #3333;
+  letter-spacing: 1.5px; cursor: pointer; transition: box-shadow 0.18s, transform 0.1s;
   margin-top: 16px;
 }
 .capture-btn-3d:active {
-  box-shadow: 0 2px 5px #bbb;
-  transform: translateY(2px) scale(0.98);
+  box-shadow: 0 2px 5px #bbb; transform: translateY(2px) scale(0.98);
 }
 @media (max-width: 500px) {
   .camera-container { max-width: 98vw; }
 }
-
+    
 /* === SEARCH MINICARD === */
 .search-minicard {
   max-width: 330px;
@@ -545,23 +533,25 @@ option[value=""] {
     }
 
     // KEMASKINI FUNGSI captureImage()
-  function captureImage() {
+    function captureImage() {
   const video = document.getElementById('camera-video');
   const cameraContainer = document.querySelector('.camera-container');
   const guideline = document.querySelector('.guideline');
 
-    // Dapatkan size sebenar video
-  const videoW = video.videoWidth;
-  const videoH = video.videoHeight;
+  // LOG RESOLUTION UNTUK DEBUG
   console.log('VIDEO', video.videoWidth, video.videoHeight);
 
-    // Buat canvas untuk tangkap gambar penuh video
+  // Tangkap gambar penuh dari video
+  const videoW = video.videoWidth;
+  const videoH = video.videoHeight;
+
+  // Buat canvas penuh
   const canvas = document.createElement('canvas');
   canvas.width = videoW;
   canvas.height = videoH;
   canvas.getContext('2d').drawImage(video, 0, 0, videoW, videoH);
 
-    // Dapatkan ratio guideline dalam container kamera
+  // Kira posisi & saiz guideline dalam container kamera
   const contRect = cameraContainer.getBoundingClientRect();
   const guideRect = guideline.getBoundingClientRect();
 
@@ -570,13 +560,12 @@ option[value=""] {
   const ratioWidth = guideRect.width / contRect.width;
   const ratioHeight = guideRect.height / contRect.height;
 
-    // Kira saiz dan posisi crop ikut guideline
   const cropX = Math.round(canvas.width * ratioLeft);
   const cropY = Math.round(canvas.height * ratioTop);
   const cropW = Math.round(canvas.width * ratioWidth);
   const cropH = Math.round(canvas.height * ratioHeight);
 
-    // Buat canvas baru untuk gambar crop
+  // Buat canvas baru untuk hasil crop
   const cropCanvas = document.createElement('canvas');
   cropCanvas.width = cropW;
   cropCanvas.height = cropH;
@@ -584,42 +573,47 @@ option[value=""] {
     canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH
   );
 
-    // Hasil gambar crop siap compress
-  const croppedImage = cropCanvas.toDataURL('image/jpeg', 0.85);
-
-    // Papar preview gambar yang sudah di-crop
+  // Preview hasil crop
+  const croppedImage = cropCanvas.toDataURL('image/jpeg', 0.88);
   document.getElementById('preview').src = croppedImage;
   document.getElementById('imageContainer').style.display = 'flex';
 
-    // Tutup modal kamera
   closeCameraModal();
 
-    // === Hantar ke Google Vision untuk autofill + AI VERIFY ===
+  // === Hantar ke Google Vision untuk autofill + AI VERIFY (AI Smart) ===
   (async () => {
     try {
       document.body.style.cursor = 'progress';
       const proxyUrl = "https://sensory-vision.edreborn86.workers.dev";
+      // SPEED UP: hantar imej size kecil (resize) untuk OCR
+      const base64 = croppedImage.split(",")[1];
       const res = await fetch(proxyUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: croppedImage.split(",")[1] })
+        body: JSON.stringify({
+          image: base64,
+          features: [
+            { type: "TEXT_DETECTION", maxResults: 2 },
+            { type: "DOCUMENT_TEXT_DETECTION", maxResults: 2 }
+          ]
+        })
       });
       const result = await res.json();
       document.body.style.cursor = 'default';
 
-      // --- AI Smart OCR Verification di sini! ---
+      // === AI SMART VERIFICATION (Penambahbaikan AI, filter, normalize, autofill) ===
       if (!verifyOcrResult(result)) return;
-      // Autofill jika valid
-      if (result.name) document.getElementById('namePassport').value = result.name.toUpperCase();
-      if (result.idnum) document.getElementById('mykadPassport').value = result.idnum.toUpperCase();
+      // AI Clean-up untuk nama & no kad
+      if (result.name) document.getElementById('namePassport').value = result.name.replace(/[^A-Z \-']/gi,'').toUpperCase();
+      if (result.idnum) document.getElementById('mykadPassport').value = result.idnum.replace(/[^\d\-]/g,'').toUpperCase();
 
     } catch (err) {
       document.body.style.cursor = 'default';
       alert("Autofill GAGAL: " + err.message);
     }
-    })();
+  })();
     }
-  
+    
     // Compress & preview gambar sebelum submit (fungsi fallback input file asal)
     document.getElementById('imageInput').addEventListener('change', function(event) {
       const file = event.target.files[0];
