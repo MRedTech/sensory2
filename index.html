@@ -528,7 +528,7 @@ option[value=""] {
     async function startCamera() {
       video = document.getElementById('camera-video');
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", aspectRatio: 4/3 } });
         video.srcObject = stream;
       } catch (e) {
         alert("Failed to open camera: " + e.message);
@@ -553,6 +553,7 @@ option[value=""] {
     // Dapatkan size sebenar video
   const videoW = video.videoWidth;
   const videoH = video.videoHeight;
+  console.log('VIDEO', video.videoWidth, video.videoHeight);
 
     // Buat canvas untuk tangkap gambar penuh video
   const canvas = document.createElement('canvas');
@@ -1070,7 +1071,7 @@ option[value=""] {
         Swal.fire({
           icon: 'warning',
           title: 'DOCUMENT INVALID',
-          text: 'The system could not verify your ID or Name. Please retake photo or check your document.',
+          text: 'The system could not verify ID or Name. Please retake photo or check document.',
           background: 'linear-gradient(135deg, #ffeaea 60%, #ff5353 100%)',
           confirmButtonColor: '#176B39',
           width: 280, 
