@@ -244,77 +244,55 @@ option[value=""] {
 
 /* === MODAL KAMERA DAN GUIDELINE === */
 .camera-modal {
-  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-  background: rgba(0,0,0,0.85); z-index: 99999;
-  display: flex; justify-content: center; align-items: center; flex-direction: column;
-}
-.camera-container {
-  position: relative;
-  width: 94vw;
-  max-width: 400px;
-  aspect-ratio: 4/3;
-  background: #000;
-  border-radius: 14px;
-  overflow: hidden;
-}
-#camera-video {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
-  border-radius: 14px;
-  background: #222;
-  display: block;
-}
-.guideline {
-  position: absolute;
-  border: 3px solid #28cc6c;
-  border-radius: 8px;
-  left: 4%; top: 4%; width: 92%; height: 92%;
-  pointer-events: none; box-sizing: border-box;
-  box-shadow: 0 0 12px #28cc6c77;
-}
-.image-container {
-  position: relative;
-  display: none;
-  width: 100%;
-  max-width: 450px;
-  margin: 0 auto 20px auto;
-  background: #f5f7f5;
-  border: 1px solid #2b7a2b;
-  border-radius: 18px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-  overflow: hidden;
-  aspect-ratio: 16/10;
-}
-.image-container img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  background: #f5f7f5;
-  display: block;
-  border-radius: 18px;
-}
-.close-cam-btn {
-  position: absolute; top: 10px; right: 13px; z-index: 100;
-  background: #fff; color: #1c7e41; border: none; border-radius: 24px;
-  font-size: 21px; padding: 4px 13px; font-weight: bold; cursor: pointer;
-  box-shadow: 0 2px 10px #aaa;
-}
-.capture-btn-3d {
-  display: flex; justify-content: center; align-items: center;
-  background: linear-gradient(145deg, #41e671 0%, #176B39 100%);
-  color: #fff; border: none; border-radius: 100%;
-  width: 60px; height: 60px; font-size: 17px; font-family: Arial, sans-serif;
-  font-weight: bold; box-shadow: 0 3px 10px #8ed5a3, 0 1.5px 3px #3333;
-  letter-spacing: 1.5px; cursor: pointer; transition: box-shadow 0.18s, transform 0.1s;
-  margin-top: 16px;
-}
-.capture-btn-3d:active {
-  box-shadow: 0 2px 5px #bbb; transform: translateY(2px) scale(0.98);
-}
-@media (max-width: 500px) {
-  .camera-container { max-width: 98vw; }
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.85); z-index: 99999;
+      display: flex; justify-content: center; align-items: center;
+      flex-direction: column;
+    }
+    .camera-container {
+      position: relative; width: 94vw; max-width: 400px; aspect-ratio: 4/3;
+      background: #000; border-radius: 14px; overflow: hidden;
+    }
+    #camera-video {
+      width: 100%; height: auto; border-radius: 14px;
+      background: #222;
+    }
+    .guideline {
+      position: absolute; border: 3px solid #28cc6c; border-radius: 8px;
+      left: 4%; top: 4%; width: 92%; height: 92%;
+      pointer-events: none; box-sizing: border-box;
+    }
+    .close-cam-btn {
+      position: absolute; top: 10px; right: 13px; z-index: 100;
+      background: #fff; color: #1c7e41; border: none; border-radius: 24px;
+      font-size: 21px; padding: 4px 13px; font-weight: bold; cursor: pointer;
+      box-shadow: 0 2px 10px #aaa;
+    }
+    .capture-btn-3d {
+     display: flex;
+     justify-content: center;
+     align-items: center;
+     background: linear-gradient(145deg, #41e671 0%, #176B39 100%);
+     color: #fff;
+     border: none;
+     border-radius: 100%;
+     width: 60px;
+     height: 60px;
+     font-size: 17px;
+     font-family: Arial, sans-serif;
+     font-weight: bold;
+     box-shadow: 0 3px 10px #8ed5a3, 0 1.5px 3px #3333;
+     letter-spacing: 1.5px;
+     cursor: pointer;
+     transition: box-shadow 0.18s, transform 0.1s;
+     margin-top: 16px;
+   }
+   .capture-btn-3d:active {
+     box-shadow: 0 2px 5px #bbb;
+     transform: translateY(2px) scale(0.98);
+   }
+    @media (max-width: 500px) {
+      .camera-container { max-width: 98vw;
 }
 
 /* === SEARCH MINICARD === */
