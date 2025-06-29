@@ -516,6 +516,7 @@ option[value=""] {
     let stream = null;
     let video = null;
 
+    // Gantikan fungsi openCamera()
     function openCamera() {
       document.getElementById('cameraModal').style.display = 'flex';
       startCamera();
@@ -524,81 +525,76 @@ option[value=""] {
     async function startCamera() {
       video = document.getElementById('camera-video');
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", aspectRatio: 4/3 } });
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
         video.srcObject = stream;
       } catch (e) {
         alert("Failed to open camera: " + e.message);
         closeCameraModal();
       }
     }
-    
+
     function closeCameraModal() {
       document.getElementById('cameraModal').style.display = 'none';
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+      }
     }
 
+    //Function capture image AI
     function captureImage() {
-  const video = document.getElementById('camera-video');
-  const cameraContainer = document.querySelector('.camera-container');
+  if (!video) return;
+  const container = document.querySelector('.camera-container');
   const guideline = document.querySelector('.guideline');
-
-  // Ambil snapshot view container (bukan frame kamera native)
-  const contRect = cameraContainer.getBoundingClientRect();
-  const guideRect = guideline.getBoundingClientRect();
-  const containerW = Math.round(contRect.width);
-  const containerH = Math.round(contRect.height);
-
-  // 1. Screenshot penuh view container
+  const rect = guideline.getBoundingClientRect();
+  const contRect = container.getBoundingClientRect();
+  const ratioLeft = (rect.left - contRect.left) / contRect.width;
+  const ratioTop = (rect.top - contRect.top) / contRect.height;
+  const ratioWidth = rect.width / contRect.width;
+  const ratioHeight = rect.height / contRect.height;
   const canvas = document.createElement('canvas');
-  canvas.width = containerW;
-  canvas.height = containerH;
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
   const ctx = canvas.getContext('2d');
-  ctx.drawImage(video, 0, 0, containerW, containerH);
-
-  // 2. Crop ikut guideline (dalam container)
-  const cropX = Math.round(guideRect.left - contRect.left);
-  const cropY = Math.round(guideRect.top - contRect.top);
-  const cropW = Math.round(guideRect.width);
-  const cropH = Math.round(guideRect.height);
-
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const cropX = canvas.width * ratioLeft;
+  const cropY = canvas.height * ratioTop;
+  const cropW = canvas.width * ratioWidth;
+  const cropH = canvas.height * ratioHeight;
   const cropCanvas = document.createElement('canvas');
   cropCanvas.width = cropW;
   cropCanvas.height = cropH;
   cropCanvas.getContext('2d').drawImage(
     canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH
   );
+  const compressed = cropCanvas.toDataURL('image/jpeg', 0.7);
+  document.getElementById('preview').src = compressed;
+  document.getElementById('imageContainer').style.display = 'block';
 
-  // 3. Preview hasil crop
-  const croppedImage = cropCanvas.toDataURL('image/jpeg', 0.9);
-  document.getElementById('preview').src = croppedImage;
-  document.getElementById('imageContainer').style.display = 'flex';
+  // **CLOSE CAMERA MODAL TERUS LEPAS SNAP**
   closeCameraModal();
 
-  // 4. AI SMART VERIFICATION: Hantar ke Google Vision & autofill
+  // === Hantar ke Google Vision untuk autofill + AI VERIFY ===
   (async () => {
     try {
       document.body.style.cursor = 'progress';
       const proxyUrl = "https://sensory-vision.edreborn86.workers.dev";
-      const base64 = croppedImage.split(",")[1];
       const res = await fetch(proxyUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          image: base64,
-          features: [
-            { type: "TEXT_DETECTION", maxResults: 2 },
-            { type: "DOCUMENT_TEXT_DETECTION", maxResults: 2 }
-          ]
-        })
+        body: JSON.stringify({ image: compressed.split(",")[1] })
       });
       const result = await res.json();
       document.body.style.cursor = 'default';
 
-      if (!verifyOcrResult(result)) return;
-
-      if (result.name)
-        document.getElementById('namePassport').value = result.name.replace(/[^A-Z \-']/gi,'').toUpperCase();
-      if (result.idnum)
-        document.getElementById('mykadPassport').value = result.idnum.replace(/[^\d\-]/g,'').toUpperCase();
+      // --- AI Smart OCR Verification di sini! ---
+      if (!verifyOcrResult(result)) {
+        // Jika tak valid, popup terus — user nampak!
+        return;
+      }
+      // Autofill jika valid
+      if (result.name) document.getElementById('namePassport').value = result.name.toUpperCase();
+      if (result.idnum) document.getElementById('mykadPassport').value = result.idnum.toUpperCase();
 
     } catch (err) {
       document.body.style.cursor = 'default';
