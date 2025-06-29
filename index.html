@@ -563,34 +563,25 @@ option[value=""] {
   const cameraContainer = document.querySelector('.camera-container');
   const guideline = document.querySelector('.guideline');
 
-  // LOG RESOLUTION UNTUK DEBUG
-  console.log('VIDEO', video.videoWidth, video.videoHeight);
-
-  // Tangkap gambar penuh dari video
-  const videoW = video.videoWidth;
-  const videoH = video.videoHeight;
-
-  // Buat canvas penuh
-  const canvas = document.createElement('canvas');
-  canvas.width = videoW;
-  canvas.height = videoH;
-  canvas.getContext('2d').drawImage(video, 0, 0, videoW, videoH);
-
-  // Kira posisi & saiz guideline dalam container kamera
+  // Ambil snapshot view container (bukan frame kamera native)
   const contRect = cameraContainer.getBoundingClientRect();
   const guideRect = guideline.getBoundingClientRect();
+  const containerW = Math.round(contRect.width);
+  const containerH = Math.round(contRect.height);
 
-  const ratioLeft = (guideRect.left - contRect.left) / contRect.width;
-  const ratioTop = (guideRect.top - contRect.top) / contRect.height;
-  const ratioWidth = guideRect.width / contRect.width;
-  const ratioHeight = guideRect.height / contRect.height;
+  // 1. Screenshot penuh view container
+  const canvas = document.createElement('canvas');
+  canvas.width = containerW;
+  canvas.height = containerH;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, containerW, containerH);
 
-  const cropX = Math.round(canvas.width * ratioLeft);
-  const cropY = Math.round(canvas.height * ratioTop);
-  const cropW = Math.round(canvas.width * ratioWidth);
-  const cropH = Math.round(canvas.height * ratioHeight);
+  // 2. Crop ikut guideline (dalam container)
+  const cropX = Math.round(guideRect.left - contRect.left);
+  const cropY = Math.round(guideRect.top - contRect.top);
+  const cropW = Math.round(guideRect.width);
+  const cropH = Math.round(guideRect.height);
 
-  // Buat canvas baru untuk hasil crop
   const cropCanvas = document.createElement('canvas');
   cropCanvas.width = cropW;
   cropCanvas.height = cropH;
@@ -598,19 +589,17 @@ option[value=""] {
     canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH
   );
 
-  // Preview hasil crop
-  const croppedImage = cropCanvas.toDataURL('image/jpeg', 0.88);
+  // 3. Preview hasil crop
+  const croppedImage = cropCanvas.toDataURL('image/jpeg', 0.9);
   document.getElementById('preview').src = croppedImage;
   document.getElementById('imageContainer').style.display = 'flex';
-
   closeCameraModal();
 
-  // === Hantar ke Google Vision untuk autofill + AI VERIFY (AI Smart) ===
+  // 4. AI SMART VERIFICATION: Hantar ke Google Vision & autofill
   (async () => {
     try {
       document.body.style.cursor = 'progress';
       const proxyUrl = "https://sensory-vision.edreborn86.workers.dev";
-      // SPEED UP: hantar imej size kecil (resize) untuk OCR
       const base64 = croppedImage.split(",")[1];
       const res = await fetch(proxyUrl, {
         method: "POST",
@@ -626,11 +615,12 @@ option[value=""] {
       const result = await res.json();
       document.body.style.cursor = 'default';
 
-      // === AI SMART VERIFICATION (Penambahbaikan AI, filter, normalize, autofill) ===
       if (!verifyOcrResult(result)) return;
-      // AI Clean-up untuk nama & no kad
-      if (result.name) document.getElementById('namePassport').value = result.name.replace(/[^A-Z \-']/gi,'').toUpperCase();
-      if (result.idnum) document.getElementById('mykadPassport').value = result.idnum.replace(/[^\d\-]/g,'').toUpperCase();
+
+      if (result.name)
+        document.getElementById('namePassport').value = result.name.replace(/[^A-Z \-']/gi,'').toUpperCase();
+      if (result.idnum)
+        document.getElementById('mykadPassport').value = result.idnum.replace(/[^\d\-]/g,'').toUpperCase();
 
     } catch (err) {
       document.body.style.cursor = 'default';
@@ -638,7 +628,7 @@ option[value=""] {
     }
   })();
     }
-
+    
     // Compress & preview gambar sebelum submit (fungsi fallback input file asal)
     document.getElementById('imageInput').addEventListener('change', function(event) {
       const file = event.target.files[0];
