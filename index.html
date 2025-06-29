@@ -251,17 +251,19 @@ option[value=""] {
 .camera-container {
   position: relative; width: 94vw; max-width: 400px; aspect-ratio: 4/3;
   background: #000; border-radius: 14px; overflow: hidden;
-  display: flex; align-items: center; justify-content: center;
 }
 #camera-video {
-  width: 100%; height: 100%; object-fit: cover;
-  border-radius: 14px; background: #222; display: block;
+  position: absolute; left: 0; top: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  border-radius: 14px;
+  background: #222;
+  display: block;
 }
 .guideline {
   position: absolute;
-  border: 3px solid #28cc6c;
-  border-radius: 8px;
   left: 4%; top: 4%; width: 92%; height: 92%;
+  border: 3px solid #28cc6c; border-radius: 8px;
   pointer-events: none; box-sizing: border-box;
   box-shadow: 0 0 12px #28cc6c77;
 }
@@ -493,16 +495,16 @@ option[value=""] {
 </form>
 <div class="footer">POWERED BY MRED TECH</div>
 
-  <!-- === MODAL KAMERA UNTUK GUIDELINE === -->
-  <div id="cameraModal" class="camera-modal" style="display:none;">
-    <div class="camera-container">
-      <video id="camera-video" autoplay playsinline></video>
-      <div class="guideline"></div>
-      <button class="close-cam-btn" type="button" onclick="closeCameraModal()">×</button>
-    </div>
-    <button class="capture-btn-3d" type="button" onclick="captureImage()"></button>
+  <!-- === MODAL KAMERA UNTUK GUIDELINE === --> 
+  <div class="camera-modal" id="cameraModal" style="display:none;">
+  <div class="camera-container">
+    <video id="camera-video" autoplay playsinline></video>
+    <div class="guideline"></div>
+    <button class="close-cam-btn" type="button" onclick="closeCameraModal()">×</button>
   </div>
-
+  <button class="capture-btn-3d" type="button" onclick="captureImage()">SNAP</button>
+  </div>
+  
   <script>
     // --- MODAL CAMERA + GUIDELINE & AUTO-CROP ---
     let stream = null;
