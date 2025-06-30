@@ -410,8 +410,13 @@
 
     select option[value=""],
     select option[disabled] {
-      color: #999 !important; /* warna kelabu */
+      color: #888888 !important; /* warna kelabu */
     }
+    select:invalid,
+    select option[value="-PLEASE SELECT-"] {
+      color: #888888 !important;  /* warna kelabu */
+      font-weight: bold;
+ }
 
 </style>
   
