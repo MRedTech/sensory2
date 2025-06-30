@@ -486,7 +486,7 @@ if (mykadInput) {
 <div id="reasonSection" style="display:none; margin-top:10px;">
   <label for="reasonSelect">REASON</label>
   <select id="reasonSelect" name="reasonSelect">
-    <option value="" disabled selected>-PLEASE SELECT-</option>
+    <option value="-PLEASE SELECT-">-PLEASE SELECT-</option>
     <option value="Block card">Block card</option>
     <option value="Lost card">Lost card</option>
     <option value="Forget card">Forget card</option>
@@ -596,14 +596,8 @@ if (mykadInput) {
       });
       const result = await res.json();
       document.body.style.cursor = 'default';
-
-      // --- AI Smart OCR Verification di sini! ---
-      if (!verifyOcrResult(result)) {
-        // Jika tak valid, popup terus — user nampak!
-        return;
       }
-      // Autofill jika valid
-      
+  
       // Autofill jika valid
       if (result.name) {
         const rawName = result.name.toUpperCase().trim();
