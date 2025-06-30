@@ -534,7 +534,7 @@ if (mykadInput) {
       }
     }
 
-    //Function capture image
+    //Function capture image AI
     function captureImage() {
   if (!video) return;
   const container = document.querySelector('.camera-container');
@@ -567,7 +567,7 @@ if (mykadInput) {
   // **CLOSE CAMERA MODAL TERUS LEPAS SNAP**
   closeCameraModal();
 
-  // === Hantar ke Google Vision untuk autofill===
+  // === Hantar ke Google Vision untuk autofill + AI VERIFY ===
   (async () => {
     try {
       document.body.style.cursor = 'progress';
@@ -579,7 +579,13 @@ if (mykadInput) {
       });
       const result = await res.json();
       document.body.style.cursor = 'default';
+
+      // --- AI Smart OCR Verification di sini! ---
+      if (!verifyOcrResult(result)) {
+        // Jika tak valid, popup terus — user nampak!
+        return;
       }
+      // Autofill jika valid
       
       // Autofill jika valid
       if (result.name) {
