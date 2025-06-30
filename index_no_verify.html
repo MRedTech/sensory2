@@ -1,0 +1,230 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SECURE ENTRY SYSTEM</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #e9f5e9;
+      padding: 20px;
+      text-transform: uppercase;
+    }
+    h2 {
+      color: #2b7a2b;
+      text-align: center;
+      margin-top: 0.10px;
+      margin-bottom: 30px;
+    }
+    .clock-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 180px;
+      margin: 0 auto 13px auto;
+      padding: 2.5px 12px;
+      border-radius: 11px;
+      background: linear-gradient(90deg, #41e671 0%, #176B39 100%);
+      box-shadow: 0 1px 4px 0 #bbdfbb70;
+      font-size: 11px;
+      color: #fff;
+      letter-spacing: 1.4px;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      opacity: 0.90;
+      position: relative;
+      z-index: 10;
+    }
+    .header-gradient {
+      background: linear-gradient(145deg, #3bd97b 0%, #2b7a2b 100%);
+      font-weight: 900;
+      letter-spacing: 2px;
+      font-size: 2.2rem;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      color: transparent;
+    }
+    /* Kamera dan guideline */
+    .camera-modal {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.85); z-index: 99999;
+      display: flex; justify-content: center; align-items: center; flex-direction: column;
+    }
+    .camera-container {
+      position: relative;
+      width: 94vw;
+      max-width: 400px;
+      aspect-ratio: 4/3;
+      background: #000;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    #camera-video {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 14px;
+      background: #222;
+      display: block;
+    }
+    .guideline {
+      position: absolute;
+      border: 3px solid #28cc6c;
+      border-radius: 8px;
+      left: 4%; top: 4%; width: 92%; height: 92%;
+      pointer-events: none; box-sizing: border-box;
+      box-shadow: 0 0 12px #28cc6c77;
+    }
+    .image-container {
+      position: relative;
+      display: none;
+      width: 100%;
+      max-width: 450px;
+      margin: 0 auto 20px auto;
+      background: #f5f7f5;
+      border: 1px solid #2b7a2b;
+      border-radius: 18px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      overflow: hidden;
+      aspect-ratio: 16/10;
+    }
+    .image-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #f5f7f5;
+      display: block;
+      border-radius: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="clock-bar">
+    <span id="liveDateOnly"></span>
+    <span id="liveTimeOnly"></span>
+  </div>
+  <div style="text-align:center;margin-bottom:8px;">
+    <h2 class="header-gradient" style="margin-bottom:0.18em;">
+      SECURE ENTRY
+    </h2>
+    <div style="color:#489167;font-size:15px;letter-spacing:0.7px;margin-bottom:7px;">
+      REGISTER.ACCESS.SECURE
+    </div>
+    <div style="height:3px;width:60px;margin:0 auto 4px auto;background:linear-gradient(90deg,#3bd97b 20%,#2b7a2b 80%);border-radius:2px;"></div>
+  </div>
+
+  <!-- Search, Take Photo, Preview (boleh tambah/ubah ikut projek Edos) -->
+  <div class="top-action">
+    <button type="button" id="takePhotoBtn" onclick="openCamera()">TAKE PICTURE</button>
+    <span class="photo-label">Take photo of MyKad/Licence</span>
+  </div>
+
+  <div class="image-container" id="imageContainer" style="display:none;">
+    <img id="preview" src="#" alt="IMAGE PREVIEW" />
+    <div class="watermark">SENSORY USE ONLY</div>
+  </div>
+
+  <form id="registrationForm" autocomplete="off">
+    <label for="namePassport">NAME</label>
+    <input type="text" id="namePassport" name="namePassport" required>
+    <label for="mykadPassport">MYKAD / PASSPORT</label>
+    <input type="text" id="mykadPassport" name="mykadPassport" required>
+    <label for="regnum">REGISTRATION NUMBER</label>
+    <input type="text" id="regnum" name="regnum" required>
+    <label for="contact">CONTACT NUMBER</label>
+    <input type="tel" id="contact" name="contact" required maxlength="15" autocomplete="off" inputmode="numeric" pattern="[0-9]*">
+    <!-- ... Lain-lain input & select ... -->
+    <input type="file" accept="image/*" capture="environment" id="imageInput" style="display:none;">
+    <button type="submit" id="submitBtn">SUBMIT</button>
+  </form>
+
+  <div class="footer">POWERED BY MRED TECH</div>
+
+  <!-- Modal Kamera & Guideline -->
+  <div class="camera-modal" id="cameraModal" style="display:none;">
+    <div class="camera-container">
+      <video id="camera-video" autoplay playsinline></video>
+      <div class="guideline"></div>
+      <button class="close-cam-btn" type="button" onclick="closeCameraModal()">×</button>
+    </div>
+    <button class="capture-btn-3d" type="button" onclick="captureImage()">SNAP</button>
+  </div>
+
+<script>
+let stream = null;
+let video = null;
+function openCamera() {
+  document.getElementById('cameraModal').style.display = 'flex';
+  startCamera();
+}
+async function startCamera() {
+  video = document.getElementById('camera-video');
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    video.srcObject = stream;
+  } catch (e) {
+    alert("Failed to open camera: " + e.message);
+    closeCameraModal();
+  }
+}
+function closeCameraModal() {
+  document.getElementById('cameraModal').style.display = 'none';
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+    stream = null;
+  }
+}
+
+// -- Fungsi captureImage TANPA AI Smart Verification --
+function captureImage() {
+  if (!video) return;
+  const cameraContainer = document.querySelector('.camera-container');
+  const guideline = document.querySelector('.guideline');
+  const contRect = cameraContainer.getBoundingClientRect();
+  const guideRect = guideline.getBoundingClientRect();
+  const containerW = Math.round(contRect.width);
+  const containerH = Math.round(contRect.height);
+  const canvas = document.createElement('canvas');
+  canvas.width = containerW;
+  canvas.height = containerH;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, containerW, containerH);
+  const cropX = Math.round(guideRect.left - contRect.left);
+  const cropY = Math.round(guideRect.top - contRect.top);
+  const cropW = Math.round(guideRect.width);
+  const cropH = Math.round(guideRect.height);
+  const cropCanvas = document.createElement('canvas');
+  cropCanvas.width = cropW;
+  cropCanvas.height = cropH;
+  cropCanvas.getContext('2d').drawImage(
+    canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH
+  );
+  const croppedImage = cropCanvas.toDataURL('image/jpeg', 0.9);
+  document.getElementById('preview').src = croppedImage;
+  document.getElementById('imageContainer').style.display = 'block';
+  closeCameraModal();
+}
+
+// Jam digital
+function pad(n){return n<10?'0'+n:n}
+function updateDateTime() {
+  const now = new Date();
+  const d = pad(now.getDate());
+  const m = pad(now.getMonth() + 1);
+  const y = now.getFullYear();
+  const h = pad(now.getHours());
+  const min = pad(now.getMinutes());
+  const s = pad(now.getSeconds());
+  document.getElementById("liveDateOnly").textContent = `${d}/${m}/${y}`;
+  document.getElementById("liveTimeOnly").textContent = `${h}:${min}:${s}`;
+}
+setInterval(updateDateTime, 1000);
+updateDateTime();
+</script>
+</body>
+</html>
