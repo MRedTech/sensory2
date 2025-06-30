@@ -591,11 +591,7 @@ if (mykadInput) {
       });
       const result = await res.json();
       document.body.style.cursor = 'default';
-
-      // --- AI Smart OCR Verification di sini! ---
-      //if (!verifyOcrResult(result)) {
-        // Jika tak valid, popup terus — user nampak!
-        return;
+      
       }
       // Autofill jika valid
       if (result.name) {
@@ -1100,36 +1096,6 @@ function filterNonNameWords(text) {
     return !NON_NAME_WORDS.includes(word.toUpperCase());
   });
   return filtered.join(' ');
-}
-
-
-// ==== FUNCTION VERIFY RESULT (Panggil lepas dapat OCR) ====
-function verifyOcrResult(ocr) {
-  let ic = (ocr.idnum || '').replace(/\s+/g, '');
-  let name = ocr.name || '';
-  // AI pattern check (MyKad/Lesen/Passport)
-  let valid =
-    (isMyKadPattern(ic) || isLesenPattern(ic) || isPassportPattern(ic))
-    && isValidName(name);
-
-  if (!valid) {
-    Swal.fire({
-  icon: 'warning',
-  title: 'DOCUMENT INVALID',
-  text: 'The system could not verify your ID or Name. Please retake photo or check your document.',
-  background: 'linear-gradient(135deg, #ffeaea 60%, #ff5353 100%)',
-  confirmButtonColor: '#176B39',
-  width: 280, 
-  customClass: {
-    popup: 'shadow-2xl px-7 pt-7 pb-6' 
-  },
-  willOpen: (popup) => {
-    popup.style.borderRadius = '14px';
-  }
-});
-    return false;
-  }
-  return true;
 }
 
 </script>
