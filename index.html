@@ -690,6 +690,7 @@ if (mykadInput) {
     unitField.style.display = (val === 'OWNER' || val === 'TENANT') ? 'block' : 'none';
     if (val === 'OWNER' || val === 'TENANT') {
       reasonSection.style.display = 'block';
+      document.getElementById('reason').value = "";
     } else {
       reasonSection.style.display = 'none';
       reasonSelect.value = '';
