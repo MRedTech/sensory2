@@ -175,6 +175,13 @@
     select option[value=""] {
       color: #888888 !important;
     }
+    #reasonSelect option[value=""] {
+      color: #888888 !important;
+    }
+    #reasonSelect:invalid,
+    select option[value=""] {
+      color: #888888 !important;
+    }
     .phone-container {
       position: relative;
       margin-bottom: 30px;
@@ -473,7 +480,7 @@ if (mykadInput) {
 <div id="reasonSection" style="display:none; margin-top:10px;">
   <label for="reasonSelect">REASON</label>
   <select id="reasonSelect" name="reasonSelect">
-    <option value="PLEASE SELECT"; color: #888888;>-PLEASE SELECT-</option>
+    <option value="" disable selected>-PLEASE SELECT-</option>
     <option value="Block card">Block card</option>
     <option value="Lost card">Lost card</option>
     <option value="Forget card">Forget card</option>
