@@ -690,7 +690,6 @@ if (mykadInput) {
     unitField.style.display = (val === 'OWNER' || val === 'TENANT') ? 'block' : 'none';
     if (val === 'OWNER' || val === 'TENANT') {
       reasonSection.style.display = 'block';
-      document.getElementById('reason').value = "";
     } else {
       reasonSection.style.display = 'none';
       reasonSelect.value = '';
@@ -707,6 +706,7 @@ if (mykadInput) {
   reasonSelect.addEventListener('change', function() {
     if (this.value === 'Other') {
       reasonOther.style.display = 'block';
+      document.getElementById('reason').value = "";
     } else {
       reasonOther.style.display = 'none';
       reasonOther.value = '';
