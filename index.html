@@ -308,10 +308,6 @@
   0% { transform: rotate(0deg);}
   100% { transform: rotate(360deg);} 
 }
-     .select option[value=""] {
-  color: #888888 !important;
-  font-weight: bold;
-}
 </style>
 </head>
 <body>
@@ -477,7 +473,7 @@ if (mykadInput) {
 <div id="reasonSection" style="display:none; margin-top:10px;">
   <label for="reasonSelect">REASON</label>
   <select id="reasonSelect" name="reasonSelect">
-    <option value="" disable selected>-PLEASE SELECT-</option>
+    <option value="" disable selected:color: #888888;>-PLEASE SELECT-</option>
     <option value="Block card">Block card</option>
     <option value="Lost card">Lost card</option>
     <option value="Forget card">Forget card</option>
@@ -706,7 +702,6 @@ if (mykadInput) {
   reasonSelect.addEventListener('change', function() {
     if (this.value === 'Other') {
       reasonOther.style.display = 'block';
-      document.getElementById('reason').value = "";
     } else {
       reasonOther.style.display = 'none';
       reasonOther.value = '';
