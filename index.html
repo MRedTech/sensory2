@@ -743,30 +743,38 @@
    // Tukar SPACE ke "-" & auto UPPERCASE untuk UNIT NUMBER
     document.getElementById('unitNumber').addEventListener('input', function(e) {
   let val = this.value.toUpperCase().replace(/ /g, "-");
-  // Jika sudah ada dash, biarkan susunan asal
+
+  // Jika sudah ada dash di antara huruf/angka, kekalkan susunan, hanya betulkan dash bertindih
   if (val.includes('-')) {
     this.value = val.replace(/-+/g, "-").replace(/^-+|-+$/g, "");
     return;
   }
-  // Kalau pattern AG10 atau AG05A → tukar ke A-G-10 / A-G-05A
-  let m = val.match(/^([A-Z])G(\d{1,2}[A-Z]?)/);
+
+  // AG10, A-G10, A-G-10, AG05A semua tukar ke A-G-10 / A-G-05A
+  let m = val.match(/^([A-Z])G(\d{1,2}[A-Z]?)$/);
   if (m) {
     this.value = m[1] + "-G-" + m[2];
     return;
   }
-  // Kalau pattern A0310 → A-03-10
-  let m2 = val.match(/^([A-Z])(\d{2})(\d{1,2}[A-Z]?)$/);
+  // A0310 atau A03A05A → A-03-10 atau A-03A-05A
+  let m2 = val.match(/^([A-Z])(\d{2}[A-Z]?)(\d{2}[A-Z]?)$/);
   if (m2) {
     this.value = m2[1] + "-" + m2[2] + "-" + m2[3];
     return;
   }
-  // Kalau pattern AG → A-G
-  let m3 = val.match(/^([A-Z])G$/);
+  // A03A03A → A-03A-03A
+  let m3 = val.match(/^([A-Z])(\d{2}[A-Z])(\d{2}[A-Z])$/);
   if (m3) {
-    this.value = m3[1] + "-G";
+    this.value = m3[1] + "-" + m3[2] + "-" + m3[3];
     return;
   }
-  // Jika tak match apa-apa, auto uppercase
+  // AG → A-G
+  let m4 = val.match(/^([A-Z])G$/);
+  if (m4) {
+    this.value = m4[1] + "-G";
+    return;
+  }
+  // Jika tak match apa-apa, kekalkan input asal upper
   this.value = val;
 });
     
