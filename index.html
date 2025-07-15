@@ -744,37 +744,32 @@
     document.getElementById('unitNumber').addEventListener('input', function(e) {
   let val = this.value.toUpperCase().replace(/ /g, "-");
 
-  // Jika sudah ada dash di antara huruf/angka, kekalkan susunan, hanya betulkan dash bertindih
+  // Kalau sudah ada dash manual, biar user tentukan
   if (val.includes('-')) {
     this.value = val.replace(/-+/g, "-").replace(/^-+|-+$/g, "");
     return;
   }
 
-  // AG10, A-G10, A-G-10, AG05A semua tukar ke A-G-10 / A-G-05A
-  let m = val.match(/^([A-Z])G(\d{1,2}[A-Z]?)$/);
+  // 1. A-G10 atau AG10 → A-G-10
+  let m = val.match(/^([A-Z])[-]?G[-]?(\d{1,2}[A-Z]?)$/);
   if (m) {
     this.value = m[1] + "-G-" + m[2];
     return;
   }
-  // A0310 atau A03A05A → A-03-10 atau A-03A-05A
-  let m2 = val.match(/^([A-Z])(\d{2}[A-Z]?)(\d{2}[A-Z]?)$/);
+  // 2. A-G → A-G (untuk user nak taip manual G sahaja)
+  let m2 = val.match(/^([A-Z])[-]?G$/);
   if (m2) {
-    this.value = m2[1] + "-" + m2[2] + "-" + m2[3];
+    this.value = m2[1] + "-G";
     return;
   }
-  // A03A03A → A-03A-03A
-  let m3 = val.match(/^([A-Z])(\d{2}[A-Z])(\d{2}[A-Z])$/);
+  // 3. A0310 → A-03-10, atau A03A03A → A-03A-03A
+  let m3 = val.match(/^([A-Z])(\d{2}[A-Z]?)(\d{2}[A-Z]?)$/);
   if (m3) {
     this.value = m3[1] + "-" + m3[2] + "-" + m3[3];
     return;
   }
-  // AG → A-G
-  let m4 = val.match(/^([A-Z])G$/);
-  if (m4) {
-    this.value = m4[1] + "-G";
-    return;
-  }
-  // Jika tak match apa-apa, kekalkan input asal upper
+
+  // Jika tak match apa-apa, kekalkan uppercase (supaya tak kacau format pelik)
   this.value = val;
 });
     
