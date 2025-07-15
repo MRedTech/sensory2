@@ -994,7 +994,7 @@ if (unitInput) {
   unitInput.addEventListener('input', function () {
     let val = this.value.replace(/-/g, '').toUpperCase();
 
-    // 1. AG pattern (A-G-10, A-G-09A, etc)
+    // AG10, AG09A → A-G-10 / A-G-09A
     let mG = val.match(/^([A-Z])G(\d{1,2}[A-Z]?)(\d{0,2}[A-Z]?)$/);
     if (mG && val.length > 2) {
       let out = mG[1] + '-G-' + mG[2];
@@ -1003,41 +1003,35 @@ if (unitInput) {
       return;
     }
 
-    // 2. Selepas aksara ke-4 jika HURUF, auto dash (A03A09 → A-03A-09, A03A03A → A-03A-03A)
-    if (val.length > 5 && /[A-Z]/.test(val[3])) {
-      this.value = val.slice(0,1) + '-' + val.slice(1,4) + '-' + val.slice(4);
+    // Selepas huruf "A" pada aksara ke-4, auto tambah dash
+    // Contoh: A03A09 → A-03A-09
+    if (val.length > 4 && val[3] === "A" && val[4] !== "-") {
+      this.value = val.slice(0, 4) + "-" + val.slice(4);
       return;
     }
 
-    // 3. A03A09 / A03A09A / A03A03A pattern (A-03A-09, A-03A-09A, A-03A-03A)
-    let mLong = val.match(/^([A-Z])(\d{2}[A-Z])(\d{2,3}[A-Z]?)$/);
-    if (mLong) {
-      this.value = mLong[1] + '-' + mLong[2] + '-' + mLong[3];
+    // Pattern standard: A0310 → A-03-10
+    let mStd = val.match(/^([A-Z])(\d{2})(\d{1,2}[A-Z]?)$/);
+    if (mStd) {
+      this.value = mStd[1] + '-' + mStd[2] + '-' + mStd[3];
       return;
     }
 
-    // 4. Selepas 2 digit tengah BUKAN huruf, auto dash
-    let mTengah = val.match(/^([A-Z])(\d{2})([^A-Z].*)$/);
-    if (mTengah) {
-      this.value = mTengah[1] + '-' + mTengah[2] + '-' + mTengah[3].replace(/-/g, '');
-      return;
-    }
-
-    // 5. A03A (A-03A)
+    // A03A → A-03A
     let mShort = val.match(/^([A-Z])(\d{2}[A-Z])$/);
     if (mShort) {
       this.value = mShort[1] + '-' + mShort[2];
       return;
     }
 
-    // 6. A1 → A-1
+    // A1 → A-1
     let m1 = val.match(/^([A-Z])(\d)$/);
     if (m1) {
       this.value = m1[1] + '-' + m1[2];
       return;
     }
 
-    // 7. AG → A-G
+    // AG → A-G
     let mAG = val.match(/^([A-Z])G$/);
     if (mAG) {
       this.value = mAG[1] + '-G';
