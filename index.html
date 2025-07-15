@@ -1003,25 +1003,23 @@ if (unitInput) {
       return;
     }
 
-    // 2. A03A09A / A03A09 / A03A03A (2 digit + huruf + 2 digit + huruf)
-    let mLong = val.match(/^([A-Z])(\d{2}[A-Z])(\d{2}[A-Z]?)$/);
+    // 2. Selepas aksara ke-4 jika HURUF, auto dash (A03A09 → A-03A-09, A03A03A → A-03A-03A)
+    if (val.length > 5 && /[A-Z]/.test(val[3])) {
+      this.value = val.slice(0,1) + '-' + val.slice(1,4) + '-' + val.slice(4);
+      return;
+    }
+
+    // 3. A03A09 / A03A09A / A03A03A pattern (A-03A-09, A-03A-09A, A-03A-03A)
+    let mLong = val.match(/^([A-Z])(\d{2}[A-Z])(\d{2,3}[A-Z]?)$/);
     if (mLong) {
       this.value = mLong[1] + '-' + mLong[2] + '-' + mLong[3];
       return;
     }
 
-    // 3. Selepas 2 digit tengah BUKAN huruf, auto dash
+    // 4. Selepas 2 digit tengah BUKAN huruf, auto dash
     let mTengah = val.match(/^([A-Z])(\d{2})([^A-Z].*)$/);
     if (mTengah) {
       this.value = mTengah[1] + '-' + mTengah[2] + '-' + mTengah[3].replace(/-/g, '');
-      return;
-    }
-
-    // 4. Selepas aksara ke-4 jika HURUF, auto dash
-    //    Contoh: A03A09 → A-03A-09 (jika aksara ke-4 adalah huruf)
-    let m4 = val.match(/^([A-Z])(\d{2}[A-Z])(\d{2,3}[A-Z]?)$/);
-    if (m4) {
-      this.value = m4[1] + '-' + m4[2] + '-' + m4[3];
       return;
     }
 
