@@ -741,7 +741,10 @@
   });
     
    // Tukar SPACE ke "-" & auto UPPERCASE untuk UNIT NUMBER
-    
+    document.getElementById('unitNumber').addEventListener('input', function(e) {
+      this.value = this.value.replace(/ /g, "-").toUpperCase();
+    });
+
     // Endpoint Cloudflare Worker
 const WORKER_URL = "https://ext-gs12.edreborn86.workers.dev";
     // --- UNIVERSAL SEARCH RECORD FUNCTION (COPY PASTE SIAP) ---
@@ -1020,14 +1023,6 @@ if (unitInput) {
       last = end.slice(0,2);
       if (end.length > 2) last += end.slice(2,3);
     }
-    let val = this.value.toUpperCase().replace(/ /g,"");
-    // === TUKAR: Selepas mana-mana G yang tak ada dash, masukkan dash
-    val = val.replace(/G(?!-)/g, "G-");
-    // Bersihkan dash berganda
-    val = val.replace(/-+/g, "-").replace(/^-|-$/g, "");
-    this.value = val;
-  });
-}
 
     let formatted = prefix;
     if (middle) formatted += '-' + middle;
