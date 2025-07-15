@@ -744,44 +744,31 @@
     document.getElementById('unitNumber').addEventListener('input', function(e) {
   let val = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
-  // Pattern AG10/A-G-10
-  if (/^([A-Z])G(\d{1,2}[A-Z]?)$/.test(val)) {
-    this.value = val.replace(/^([A-Z])G(\d{1,2}[A-Z]?)$/, "$1-G-$2");
-    return;
+  // Untuk AG, AG10, AG03A, AG03A09, AG03A03A, dll
+  let dashAfterG = val.replace(/^([A-Z])G/, "$1-G");
+  // Untuk pattern A-G1234... dst, tukar yang lain
+  let parts = dashAfterG.match(/^([A-Z])(-G)?([0-9A-Z]*)$/);
+  if (parts) {
+    let output = parts[1]; // huruf pertama
+    if (parts[2]) output += parts[2]; // -G jika ada
+    let rest = parts[3] || '';
+    // Pisah lagi jika ada gabungan nombor dan abjad
+    if (rest.length > 0) {
+      // Kalau ada dua digit diikuti abjad, pisah dengan dash
+      let subparts = rest.match(/^(\d{2}[A-Z]?)(\d{2}[A-Z]*)$/);
+      if (subparts) {
+        output += '-' + subparts[1] + '-' + subparts[2];
+      } else if (/^\d{2}[A-Z]$/.test(rest)) {
+        output += '-' + rest;
+      } else {
+        // Default, tambah dash sebelum nombor
+        output += '-' + rest;
+      }
+    }
+    this.value = output.replace(/--+/g, "-").replace(/-$/, "");
+  } else {
+    this.value = dashAfterG;
   }
-
-  // Pattern AG → A-G
-  if (/^([A-Z])G$/.test(val)) {
-    this.value = val.replace(/^([A-Z])G$/, "$1-G");
-    return;
-  }
-
-  // Pattern A03A09 → A-03A-09
-  if (/^([A-Z])(\d{2}[A-Z])(\d{2}[A-Z]?)$/.test(val)) {
-    this.value = val.replace(/^([A-Z])(\d{2}[A-Z])(\d{2}[A-Z]?)$/, "$1-$2-$3");
-    return;
-  }
-
-  // Pattern A03A03A → A-03A-03A (paling umum untuk unit double abjad)
-  if (/^([A-Z])(\d{2}[A-Z])(\d{2}[A-Z])$/.test(val)) {
-    this.value = val.replace(/^([A-Z])(\d{2}[A-Z])(\d{2}[A-Z])$/, "$1-$2-$3");
-    return;
-  }
-
-  // Pattern A0310 → A-03-10
-  if (/^([A-Z])(\d{2})(\d{2})$/.test(val)) {
-    this.value = val.replace(/^([A-Z])(\d{2})(\d{2})$/, "$1-$2-$3");
-    return;
-  }
-
-  // Pattern A03A → A-03A
-  if (/^([A-Z])(\d{2}[A-Z])$/.test(val)) {
-    this.value = val.replace(/^([A-Z])(\d{2}[A-Z])$/, "$1-$2");
-    return;
-  }
-
-  // Fallback: upper case, tiada dash
-  this.value = val;
 });
 
     // Endpoint Cloudflare Worker
