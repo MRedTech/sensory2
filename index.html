@@ -993,29 +993,44 @@ const urlCloudflareWorker = "https://ext-gs12.edreborn86.workers.dev";
 if (unitInput) {
   unitInput.addEventListener('input', function () {
     let val = this.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
-    // Format: AG10, AG05A, A03A09 dll
 
-    // 1. A-G-10 (AG10, AG1, AG05A, AG05A09)
+    // Pattern 1: AG10, AG09A, AG1, AG09, AG09A01 (A-G-10, A-G-09A, A-G-09A-01)
     let matchG = val.match(/^([A-Z])G(\d{1,2}[A-Z]?)(\d{0,2}[A-Z]?)$/);
-    if (matchG) {
-      let result = matchG[1] + '-G-' + matchG[2];
-      if (matchG[3]) result += '-' + matchG[3];
-      this.value = result;
+    if (matchG && val.length > 2) {
+      let out = matchG[1] + "-G-" + matchG[2];
+      if (matchG[3]) out += "-" + matchG[3];
+      this.value = out;
       return;
     }
-    // 2. A-03A-09 (A03A09)
+    // Pattern 2: A03A09 → A-03A-09
     let matchA = val.match(/^([A-Z])(\d{2}[A-Z])(\d{2})$/);
     if (matchA) {
       this.value = matchA[1] + '-' + matchA[2] + '-' + matchA[3];
       return;
     }
-    // 3. A-03-09 (A0309)
+    // Pattern 3: A0309 → A-03-09
     let matchNum = val.match(/^([A-Z])(\d{2})(\d{2})$/);
     if (matchNum) {
       this.value = matchNum[1] + '-' + matchNum[2] + '-' + matchNum[3];
       return;
     }
-    // 4. Auto dash selepas G, jika belum ada dash
+    // Pattern 4: A03A → A-03A
+    let matchA2 = val.match(/^([A-Z])(\d{2}[A-Z])$/);
+    if (matchA2) {
+      this.value = matchA2[1] + '-' + matchA2[2];
+      return;
+    }
+    // Pattern 5: A1 → A-1
+    let match1 = val.match(/^([A-Z])(\d)$/);
+    if (match1) {
+      this.value = match1[1] + '-' + match1[2];
+      return;
+    }
+    // Pattern 6: Sudah ada dash, kekalkan
+    if (/^[A-Z](-[G]?)?(-?\d{1,2}[A-Z]?)*(-\d{1,2}[A-Z]?)?$/.test(this.value)) {
+      return;
+    }
+    // Fallback: Auto dash selepas G jika belum ada (AG → A-G)
     this.value = val.replace(/^([A-Z])G/, "$1-G");
   });
 }
