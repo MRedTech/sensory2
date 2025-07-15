@@ -741,54 +741,24 @@
   });
     
    // Tukar SPACE ke "-" & auto UPPERCASE untuk UNIT NUMBER
-    document.getElementById('unitNumber').addEventListener('input', function(e) {
+document.getElementById('unitNumber').addEventListener('input', function(e) {
   let val = this.value.toUpperCase().replace(/ /g, "");
+  
+  // Step 1: Auto dash selepas G (contoh: AG10 → A-G-10, AG05A → A-G-05A, AG → A-G)
+  val = val.replace(/^([A-Z])-?G(.*)/, '$1-G-$2'); // AG10, A-G10 → A-G-10
 
-  // AG10, AG05A → A-G-10 / A-G-05A
-  let m = val.match(/^([A-Z])G(\d{1,2})([A-Z]?)$/);
-  if (m) {
-    this.value = m[1] + "-G-" + m[2] + (m[3] ? m[3] : "");
-    return;
-  }
+  // Step 2: Jika pattern A03A09 → A-03A-09
+  val = val.replace(/^([A-Z])(\d{2}[A-Z]?)(\d{2}[A-Z]?)$/, '$1-$2-$3');
+  
+  // Step 3: Jika pattern A0310 → A-03-10
+  val = val.replace(/^([A-Z])(\d{2})(\d{2})$/, '$1-$2-$3');
 
-  // AG → A-G
-  let m2 = val.match(/^([A-Z])G$/);
-  if (m2) {
-    this.value = m2[1] + "-G";
-    return;
-  }
+  // Step 4: Rapikan dash berlebihan
+  val = val.replace(/-+/g, "-").replace(/^-+|-+$/g, "");
 
-  // A03A09 → A-03A-09
-  let m3 = val.match(/^([A-Z])(\d{2}[A-Z])(\d{2})$/);
-  if (m3) {
-    this.value = m3[1] + "-" + m3[2] + "-" + m3[3];
-    return;
-  }
-
-  // A03A03A → A-03A-03A
-  let m4 = val.match(/^([A-Z])(\d{2}[A-Z])(\d{2}[A-Z])$/);
-  if (m4) {
-    this.value = m4[1] + "-" + m4[2] + "-" + m4[3];
-    return;
-  }
-
-  // A0310 → A-03-10 (format lama)
-  let m5 = val.match(/^([A-Z])(\d{2})(\d{2})$/);
-  if (m5) {
-    this.value = m5[1] + "-" + m5[2] + "-" + m5[3];
-    return;
-  }
-
-  // Kalau user dah letak dash, kekalkan format & auto uppercase, betulkan dash bertindih
-  if (val.includes('-')) {
-    this.value = val.replace(/-+/g, "-").replace(/^-+|-+$/g, "");
-    return;
-  }
-
-  // Jika tak match, auto uppercase sahaja
   this.value = val;
 });
-    
+
     // Endpoint Cloudflare Worker
 const WORKER_URL = "https://ext-gs12.edreborn86.workers.dev";
     // --- UNIVERSAL SEARCH RECORD FUNCTION (COPY PASTE SIAP) ---
