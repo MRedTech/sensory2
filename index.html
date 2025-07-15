@@ -989,10 +989,16 @@ const urlCloudflareWorker = "https://ext-gs12.edreborn86.workers.dev";
 });
 
     // Fungsi real time auto format unit number
-const unitInput = document.getElementById('unitNumber');
+    const unitInput = document.getElementById('unitNumber');
 if (unitInput) {
   unitInput.addEventListener('input', function () {
-    let val = this.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    let val = this.value.toUpperCase().replace(/ /g, "");
+
+    // --- Tambahan auto dash selepas G (hanya jika belum ada dash lepas G) ---
+    // Akan tukar AG10 -> A-G10, AG05A -> A-G05A
+    val = val.replace(/^([A-Z])G(?!-)/, "$1-G");
+
+    // Kod sedia ada boleh teruskan selepas ni...
 
     if (val.length <= 1) {
       this.value = val;
@@ -1018,10 +1024,10 @@ if (unitInput) {
     let last = '';
     if (end.length > 3 && isNaN(end[2])) {
       // Jika ada huruf ketiga di bahagian hujung
-      last = end.slice(0,3);
+      last = end.slice(0, 3);
     } else {
-      last = end.slice(0,2);
-      if (end.length > 2) last += end.slice(2,3);
+      last = end.slice(0, 2);
+      if (end.length > 2) last += end.slice(2, 3);
     }
 
     let formatted = prefix;
