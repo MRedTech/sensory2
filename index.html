@@ -1011,28 +1011,35 @@ if (unitInput) {
     }
 
     // 3. Selepas 2 digit tengah BUKAN huruf, auto dash
-    //    Contoh: A0301 → A-03-01, A0325 → A-03-25
     let mTengah = val.match(/^([A-Z])(\d{2})([^A-Z].*)$/);
     if (mTengah) {
       this.value = mTengah[1] + '-' + mTengah[2] + '-' + mTengah[3].replace(/-/g, '');
       return;
     }
 
-    // 4. A03A (A-03A)
+    // 4. Selepas aksara ke-4 jika HURUF, auto dash
+    //    Contoh: A03A09 → A-03A-09 (jika aksara ke-4 adalah huruf)
+    let m4 = val.match(/^([A-Z])(\d{2}[A-Z])(\d{2,3}[A-Z]?)$/);
+    if (m4) {
+      this.value = m4[1] + '-' + m4[2] + '-' + m4[3];
+      return;
+    }
+
+    // 5. A03A (A-03A)
     let mShort = val.match(/^([A-Z])(\d{2}[A-Z])$/);
     if (mShort) {
       this.value = mShort[1] + '-' + mShort[2];
       return;
     }
 
-    // 5. A1 → A-1
+    // 6. A1 → A-1
     let m1 = val.match(/^([A-Z])(\d)$/);
     if (m1) {
       this.value = m1[1] + '-' + m1[2];
       return;
     }
 
-    // 6. AG → A-G
+    // 7. AG → A-G
     let mAG = val.match(/^([A-Z])G$/);
     if (mAG) {
       this.value = mAG[1] + '-G';
