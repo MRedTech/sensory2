@@ -742,35 +742,13 @@
     
    // Tukar SPACE ke "-" & auto UPPERCASE untuk UNIT NUMBER
     document.getElementById('unitNumber').addEventListener('input', function(e) {
-  let val = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-
-  // Untuk AG, AG10, AG03A, AG03A09, AG03A03A, dll
-  let dashAfterG = val.replace(/^([A-Z])G/, "$1-G");
-  // Untuk pattern A-G1234... dst, tukar yang lain
-  let parts = dashAfterG.match(/^([A-Z])(-G)?([0-9A-Z]*)$/);
-  if (parts) {
-    let output = parts[1]; // huruf pertama
-    if (parts[2]) output += parts[2]; // -G jika ada
-    let rest = parts[3] || '';
-    // Pisah lagi jika ada gabungan nombor dan abjad
-    if (rest.length > 0) {
-      // Kalau ada dua digit diikuti abjad, pisah dengan dash
-      let subparts = rest.match(/^(\d{2}[A-Z]?)(\d{2}[A-Z]*)$/);
-      if (subparts) {
-        output += '-' + subparts[1] + '-' + subparts[2];
-      } else if (/^\d{2}[A-Z]$/.test(rest)) {
-        output += '-' + rest;
-      } else {
-        // Default, tambah dash sebelum nombor
-        output += '-' + rest;
-      }
-    }
-    this.value = output.replace(/--+/g, "-").replace(/-$/, "");
-  } else {
-    this.value = dashAfterG;
-  }
+  let val = this.value.toUpperCase().replace(/ /g,"");
+  // Setiap kali ada huruf G (bukan sudah ada dash), tambah dash selepas G
+  val = val.replace(/G(?!-)/g, "G-");
+  // Elak double dash
+  val = val.replace(/-+/g, "-");
+  this.value = val;
 });
-
     // Endpoint Cloudflare Worker
 const WORKER_URL = "https://ext-gs12.edreborn86.workers.dev";
     // --- UNIVERSAL SEARCH RECORD FUNCTION (COPY PASTE SIAP) ---
