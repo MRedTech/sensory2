@@ -992,49 +992,31 @@ const urlCloudflareWorker = "https://ext-gs12.edreborn86.workers.dev";
     const unitInput = document.getElementById('unitNumber');
 if (unitInput) {
   unitInput.addEventListener('input', function () {
-    let val = this.value.toUpperCase().replace(/ /g, "");
+    let val = this.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    // Format: AG10, AG05A, A03A09 dll
 
-    // --- Tambahan auto dash selepas G (hanya jika belum ada dash lepas G) ---
-    // Akan tukar AG10 -> A-G10, AG05A -> A-G05A
-    val = val.replace(/^([A-Z])G(?!-)/, "$1-G");
-
-    // Kod sedia ada boleh teruskan selepas ni...
-
-    if (val.length <= 1) {
-      this.value = val;
+    // 1. A-G-10 (AG10, AG1, AG05A, AG05A09)
+    let matchG = val.match(/^([A-Z])G(\d{1,2}[A-Z]?)(\d{0,2}[A-Z]?)$/);
+    if (matchG) {
+      let result = matchG[1] + '-G-' + matchG[2];
+      if (matchG[3]) result += '-' + matchG[3];
+      this.value = result;
       return;
     }
-
-    let prefix = val.slice(0, 1); // 'A'
-    let middle = '';
-    let end = '';
-
-    // Bahagian tengah: 2 digit (+optional 1 huruf)
-    if (val.length > 3 && isNaN(val[3])) {
-      // Jika aksara ke-4 adalah huruf, tengah ambil 3
-      middle = val.slice(1, 4);
-      end = val.slice(4);
-    } else {
-      // Tengah 2 sahaja, hujung selebihnya
-      middle = val.slice(1, 3);
-      end = val.slice(3);
+    // 2. A-03A-09 (A03A09)
+    let matchA = val.match(/^([A-Z])(\d{2}[A-Z])(\d{2})$/);
+    if (matchA) {
+      this.value = matchA[1] + '-' + matchA[2] + '-' + matchA[3];
+      return;
     }
-
-    // Bahagian hujung: 2 digit (+optional 1 huruf)
-    let last = '';
-    if (end.length > 3 && isNaN(end[2])) {
-      // Jika ada huruf ketiga di bahagian hujung
-      last = end.slice(0, 3);
-    } else {
-      last = end.slice(0, 2);
-      if (end.length > 2) last += end.slice(2, 3);
+    // 3. A-03-09 (A0309)
+    let matchNum = val.match(/^([A-Z])(\d{2})(\d{2})$/);
+    if (matchNum) {
+      this.value = matchNum[1] + '-' + matchNum[2] + '-' + matchNum[3];
+      return;
     }
-
-    let formatted = prefix;
-    if (middle) formatted += '-' + middle;
-    if (last) formatted += '-' + last;
-
-    this.value = formatted;
+    // 4. Auto dash selepas G, jika belum ada dash
+    this.value = val.replace(/^([A-Z])G/, "$1-G");
   });
 }
     
