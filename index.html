@@ -741,14 +741,7 @@
   });
     
    // Tukar SPACE ke "-" & auto UPPERCASE untuk UNIT NUMBER
-    document.getElementById('unitNumber').addEventListener('input', function(e) {
-  let val = this.value.toUpperCase().replace(/ /g,"");
-  // Setiap kali ada huruf G (bukan sudah ada dash), tambah dash selepas G
-  val = val.replace(/G(?!-)/g, "G-");
-  // Elak double dash
-  val = val.replace(/-+/g, "-");
-  this.value = val;
-});
+    
     // Endpoint Cloudflare Worker
 const WORKER_URL = "https://ext-gs12.edreborn86.workers.dev";
     // --- UNIVERSAL SEARCH RECORD FUNCTION (COPY PASTE SIAP) ---
