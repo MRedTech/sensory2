@@ -994,54 +994,65 @@ if (unitInput) {
   unitInput.addEventListener('input', function () {
     let val = this.value.replace(/-/g, '').toUpperCase();
 
-    // Pattern: A03A09 → A-03A-09 (jika ke-4 adalah huruf)
-    if (val.length >= 6 && isNaN(val[3])) {
-      // Bahagi 1: 1 huruf, 2 digit, 1 huruf, baki 2-3 digit/huruf
-      let part1 = val[0];           // A
-      let part2 = val.slice(1, 3);  // 03
-      let part3 = val[3];           // A (huruf di posisi ke-4)
-      let part4 = val.slice(4);     // 09 atau 09A
-
-      // Kalau ada dash dah, kekalkan
-      if (this.value.indexOf('-') > -1) return;
-
-      this.value = `${part1}-${part2}${part3}-${part4}`;
+    // 1. AG pattern (A-G-10, A-G-09A, etc)
+    let mG = val.match(/^([A-Z])G(\d{1,2}[A-Z]?)(\d{0,2}[A-Z]?)$/);
+    if (mG && val.length > 2) {
+      let out = mG[1] + '-G-' + mG[2];
+      if (mG[3]) out += '-' + mG[3];
+      this.value = out;
       return;
     }
 
-    // AG10, AG09A → A-G-10 / A-G-09A
-    let mG = val.match(/^([A-Z])G(\d{1,2}[A-Z]?)$/);
-    if (mG) {
-      this.value = mG[1] + '-G-' + mG[2];
+    // 2. A03A09A / A03A09 / A03A03A (2 digit + huruf + 2 digit + huruf)
+    let mLong = val.match(/^([A-Z])(\d{2}[A-Z])(\d{2}[A-Z]?)$/);
+    if (mLong) {
+      this.value = mLong[1] + '-' + mLong[2] + '-' + mLong[3];
       return;
     }
 
-    // Pattern standard: A0310 → A-03-10
-    let mStd = val.match(/^([A-Z])(\d{2})(\d{1,2}[A-Z]?)$/);
-    if (mStd) {
-      this.value = mStd[1] + '-' + mStd[2] + '-' + mStd[3];
+    // 3. Selepas 2 digit tengah BUKAN huruf, auto dash
+    let mTengah = val.match(/^([A-Z])(\d{2})([^A-Z].*)$/);
+    if (mTengah) {
+      this.value = mTengah[1] + '-' + mTengah[2] + '-' + mTengah[3].replace(/-/g, '');
       return;
     }
 
-    // Kalau AG → A-G
-    let mAG = val.match(/^([A-Z])G$/);
-    if (mAG) {
-      this.value = mAG[1] + '-G';
+    // 4. Selepas aksara ke-4 jika HURUF, auto dash
+    //    Contoh: A03A09 → A-03A-09 (jika aksara ke-4 adalah huruf)
+    let m4 = val.match(/^([A-Z])(\d{2}[A-Z])(\d{2,3}[A-Z]?)$/);
+    if (m4) {
+      this.value = m4[1] + '-' + m4[2] + '-' + m4[3];
       return;
     }
 
-    // A03A → A-03A
+    // 5. A03A (A-03A)
     let mShort = val.match(/^([A-Z])(\d{2}[A-Z])$/);
     if (mShort) {
       this.value = mShort[1] + '-' + mShort[2];
       return;
     }
 
-    // Jika satu huruf, kekalkan
-    if (/^[A-Z]$/.test(val)) {
-      this.value = val;
+    // 6. A1 → A-1
+    let m1 = val.match(/^([A-Z])(\d)$/);
+    if (m1) {
+      this.value = m1[1] + '-' + m1[2];
       return;
     }
+
+    // 7. AG → A-G
+    let mAG = val.match(/^([A-Z])G$/);
+    if (mAG) {
+      this.value = mAG[1] + '-G';
+      return;
+    }
+
+    // Sudah ada dash, kekalkan
+    if (/^[A-Z](-[G]?)?(-?\d{1,2}[A-Z]?)*(-\d{1,2}[A-Z]?)?$/.test(this.value)) {
+      return;
+    }
+
+    // Fallback: dash selepas G kalau manual taip AG...
+    this.value = val.replace(/^([A-Z])G/, "$1-G");
   });
 }
     
