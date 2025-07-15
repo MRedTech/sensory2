@@ -992,59 +992,37 @@ const urlCloudflareWorker = "https://ext-gs12.edreborn86.workers.dev";
     const unitInput = document.getElementById('unitNumber');
 if (unitInput) {
   unitInput.addEventListener('input', function () {
-    let val = this.value.replace(/-/g, '').toUpperCase();
+    let val = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
-    // AG10, AG09A → A-G-10 / A-G-09A
-    let mG = val.match(/^([A-Z])G(\d{1,2}[A-Z]?)(\d{0,2}[A-Z]?)$/);
-    if (mG && val.length > 2) {
-      let out = mG[1] + '-G-' + mG[2];
-      if (mG[3]) out += '-' + mG[3];
-      this.value = out;
-      return;
+    // Prefix huruf pertama (A-)
+    let prefix = val.charAt(0);
+    let rest = val.slice(1);
+
+    // Kalau sudah ada dash lepas prefix, kekalkan
+    if (this.value.startsWith(prefix + '-')) {
+      rest = this.value.slice(2).replace(/-/g, '');
     }
 
-    // Selepas huruf "A" pada aksara ke-4, auto tambah dash
-    // Contoh: A03A09 → A-03A-09
-    if (val.length > 4 && val[3] === "A" && val[4] !== "-") {
-      this.value = val.slice(0, 4) + "-" + val.slice(4);
-      return;
+    // Jika aksara ke-4 adalah huruf "A", tambah dash selepasnya
+    let formatted = prefix;
+    if (rest.length > 0) formatted += '-';
+    // Jika aksara ke-4 = "A"
+    if (rest.length > 3 && rest[3] === "A") {
+      formatted += rest.slice(0, 4) + '-' + rest.slice(4);
+    } else {
+      // Format biasa: A-03-10, A-03A-07 dsb.
+      if (rest.length > 4) {
+        formatted += rest.slice(0, 2) + '-' + rest.slice(2, 4) + '-' + rest.slice(4);
+      } else if (rest.length > 2) {
+        formatted += rest.slice(0, 2) + '-' + rest.slice(2);
+      } else {
+        formatted += rest;
+      }
     }
+    // Elak dash berkembar
+    formatted = formatted.replace(/--+/g, '-');
 
-    // Pattern standard: A0310 → A-03-10
-    let mStd = val.match(/^([A-Z])(\d{2})(\d{1,2}[A-Z]?)$/);
-    if (mStd) {
-      this.value = mStd[1] + '-' + mStd[2] + '-' + mStd[3];
-      return;
-    }
-
-    // A03A → A-03A
-    let mShort = val.match(/^([A-Z])(\d{2}[A-Z])$/);
-    if (mShort) {
-      this.value = mShort[1] + '-' + mShort[2];
-      return;
-    }
-
-    // A1 → A-1
-    let m1 = val.match(/^([A-Z])(\d)$/);
-    if (m1) {
-      this.value = m1[1] + '-' + m1[2];
-      return;
-    }
-
-    // AG → A-G
-    let mAG = val.match(/^([A-Z])G$/);
-    if (mAG) {
-      this.value = mAG[1] + '-G';
-      return;
-    }
-
-    // Sudah ada dash, kekalkan
-    if (/^[A-Z](-[G]?)?(-?\d{1,2}[A-Z]?)*(-\d{1,2}[A-Z]?)?$/.test(this.value)) {
-      return;
-    }
-
-    // Fallback: dash selepas G kalau manual taip AG...
-    this.value = val.replace(/^([A-Z])G/, "$1-G");
+    this.value = formatted;
   });
 }
     
