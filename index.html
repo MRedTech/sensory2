@@ -741,21 +741,46 @@
   });
     
    // Tukar SPACE ke "-" & auto UPPERCASE untuk UNIT NUMBER
-document.getElementById('unitNumber').addEventListener('input', function(e) {
-  let val = this.value.toUpperCase().replace(/ /g, "");
-  
-  // Step 1: Auto dash selepas G (contoh: AG10 → A-G-10, AG05A → A-G-05A, AG → A-G)
-  val = val.replace(/^([A-Z])-?G(.*)/, '$1-G-$2'); // AG10, A-G10 → A-G-10
+    document.getElementById('unitNumber').addEventListener('input', function(e) {
+  let val = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
-  // Step 2: Jika pattern A03A09 → A-03A-09
-  val = val.replace(/^([A-Z])(\d{2}[A-Z]?)(\d{2}[A-Z]?)$/, '$1-$2-$3');
-  
-  // Step 3: Jika pattern A0310 → A-03-10
-  val = val.replace(/^([A-Z])(\d{2})(\d{2})$/, '$1-$2-$3');
+  // Pattern AG10/A-G-10
+  if (/^([A-Z])G(\d{1,2}[A-Z]?)$/.test(val)) {
+    this.value = val.replace(/^([A-Z])G(\d{1,2}[A-Z]?)$/, "$1-G-$2");
+    return;
+  }
 
-  // Step 4: Rapikan dash berlebihan
-  val = val.replace(/-+/g, "-").replace(/^-+|-+$/g, "");
+  // Pattern AG → A-G
+  if (/^([A-Z])G$/.test(val)) {
+    this.value = val.replace(/^([A-Z])G$/, "$1-G");
+    return;
+  }
 
+  // Pattern A03A09 → A-03A-09
+  if (/^([A-Z])(\d{2}[A-Z])(\d{2}[A-Z]?)$/.test(val)) {
+    this.value = val.replace(/^([A-Z])(\d{2}[A-Z])(\d{2}[A-Z]?)$/, "$1-$2-$3");
+    return;
+  }
+
+  // Pattern A03A03A → A-03A-03A (paling umum untuk unit double abjad)
+  if (/^([A-Z])(\d{2}[A-Z])(\d{2}[A-Z])$/.test(val)) {
+    this.value = val.replace(/^([A-Z])(\d{2}[A-Z])(\d{2}[A-Z])$/, "$1-$2-$3");
+    return;
+  }
+
+  // Pattern A0310 → A-03-10
+  if (/^([A-Z])(\d{2})(\d{2})$/.test(val)) {
+    this.value = val.replace(/^([A-Z])(\d{2})(\d{2})$/, "$1-$2-$3");
+    return;
+  }
+
+  // Pattern A03A → A-03A
+  if (/^([A-Z])(\d{2}[A-Z])$/.test(val)) {
+    this.value = val.replace(/^([A-Z])(\d{2}[A-Z])$/, "$1-$2");
+    return;
+  }
+
+  // Fallback: upper case, tiada dash
   this.value = val;
 });
 
