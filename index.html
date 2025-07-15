@@ -744,33 +744,31 @@
     document.getElementById('unitNumber').addEventListener('input', function(e) {
   let val = this.value.toUpperCase().replace(/ /g, "-");
 
-  // Kalau sudah ada dash manual, biar user tentukan
-  if (val.includes('-')) {
+  // Kalau sudah ada dash selepas G, jangan kacau
+  if (/^[A-Z]-G-/.test(val)) {
     this.value = val.replace(/-+/g, "-").replace(/^-+|-+$/g, "");
     return;
   }
-
-  // 1. A-G10 atau AG10 → A-G-10
-  let m = val.match(/^([A-Z])[-]?G[-]?(\d{1,2}[A-Z]?)$/);
+  // Kalau user taip AG atau A-G, tukar ke A-G
+  if (/^[A-Z]G/.test(val)) {
+    val = val.replace(/^([A-Z])G/, '$1-G');
+    this.value = val;
+    return;
+  }
+  // Kalau user taip A-G10, kekalkan atau tambah dash tengah
+  if (/^[A-Z]-G\d+/.test(val)) {
+    val = val.replace(/-+/g, "-");
+    this.value = val;
+    return;
+  }
+  // Kalau user taip pattern blok-floor-unit: A0310 → A-03-10, A03A03A → A-03A-03A
+  let m = val.match(/^([A-Z])(\d{2}[A-Z]?)(\d{2}[A-Z]?)$/);
   if (m) {
-    this.value = m[1] + "-G-" + m[2];
-    return;
-  }
-  // 2. A-G → A-G (untuk user nak taip manual G sahaja)
-  let m2 = val.match(/^([A-Z])[-]?G$/);
-  if (m2) {
-    this.value = m2[1] + "-G";
-    return;
-  }
-  // 3. A0310 → A-03-10, atau A03A03A → A-03A-03A
-  let m3 = val.match(/^([A-Z])(\d{2}[A-Z]?)(\d{2}[A-Z]?)$/);
-  if (m3) {
-    this.value = m3[1] + "-" + m3[2] + "-" + m3[3];
+    this.value = m[1] + "-" + m[2] + "-" + m[3];
     return;
   }
 
-  // Jika tak match apa-apa, kekalkan uppercase (supaya tak kacau format pelik)
-  this.value = val;
+  this.value = val; // sentiasa uppercase
 });
     
     // Endpoint Cloudflare Worker
