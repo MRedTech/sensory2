@@ -483,7 +483,7 @@
     <option value="Forget card">Forget card</option>
     <option value="Other">Other</option>
   </select>
-  <input type="text" id="otherReason" name="otherReason" placeholder="PLEASE SPECIFY" style="display:none; margin-top:7px;">
+  <input type="text" id="reasonOther" name="reasonOther" placeholder="PLEASE SPECIFY" style="display:none; margin-top:7px;">
 </div>
 
 <input type="text" id="otherCategory" name="otherCategory" placeholder="PLEASE SPECIFY" style="display:none; margin-top:10px;">
@@ -934,7 +934,7 @@ const urlCloudflareWorker = "https://ext-gs12.edreborn86.workers.dev";
   unitNumber: document.getElementById('unitNumber').value,
   tower: document.getElementById('tower').value,
   reason: document.getElementById('reasonSelect') ? document.getElementById('reasonSelect').value : '',
-  otherReason: document.getElementById('otherReason') ? document.getElementById('otherReason').value : '',
+  reasonOther: document.getElementById('reasonOther') ? document.getElementById('reasonOther').value : '',
   imageUrl: document.getElementById('preview').src
 };
 
