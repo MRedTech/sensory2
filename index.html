@@ -784,6 +784,23 @@ async function handleUniversalSearch() {
       if (res.exist) found = res.data;
     }
 
+    // Check hyperlink
+if (found && found.hasHyperlink === false) {
+    Swal.fire({
+        title: "PLEASE RETAKE ID PHOTO",
+        text: "Previous record found but image is missing for this ID. Please capture a new photo.",
+        icon: "warning",
+        background: 'linear-gradient(135deg,#fffbec9,#ffe9e9,#fff,#d5f8e9)',
+        color: '#176B39',
+        width: 280,
+        customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
+        willOpen: popup => { popup.style.borderRadius = '14px'; }
+    });
+    btn.disabled = false;
+    btn.innerHTML = 'SEARCH';
+    return;
+}
+
     // Jika ada result
     if (found) {
       Swal.fire({
