@@ -771,38 +771,41 @@ async function handleUniversalSearch() {
   btn.innerHTML = `<span class="loader"></span> SEARCHING...`;
 
   let found = null;
-  let valueNorm = normalize(input);
+let valueNorm = normalize(input);
 
-  try {
-    // Cuba cari ikut REGNUM dulu
-    let res = await searchRecord('regnum', valueNorm);
+try {
+  // Cuba cari ikut REGNUM dulu
+  let res = await searchRecord('regnum', valueNorm);
+  if (res.exist) found = res.data;
+
+  // Jika tak jumpa, cuba cari ikut MYKAD/PASSPORT
+  if (!found) {
+    res = await searchRecord('mykadPassport', valueNorm);
     if (res.exist) found = res.data;
+  }
 
-    // Jika tak jumpa, cuba cari ikut MYKAD/PASSPORT
-    if (!found) {
-      res = await searchRecord('mykadPassport', valueNorm);
-      if (res.exist) found = res.data;
-    }
+  // Ambil root hasHyperlink dari API response terakhir
+  let hasHyperlink = res.hasHyperlink || false;
 
-    // Check hyperlink
-if (found && found.hasHyperlink === false) {
+  // === Check hyperlink ===
+  if (found && hasHyperlink === false) {
     Swal.fire({
-        title: "PLEASE RETAKE ID PHOTO",
-        text: "Previous record expired.",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonText: 'YES, RETAKE ID',
-        cancelButtonText: 'NO',
-        background: 'linear-gradient(135deg,#fffbec9,#ffe9e9,#fff,#d5f8e9)',
-        color: '#176B39',
-        width: 280,
-        customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
-        willOpen: popup => { popup.style.borderRadius = '14px'; }
+      title: "PLEASE RETAKE ID PHOTO",
+      text: "Previous record expired.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: 'YES, RETAKE ID',
+      cancelButtonText: 'NO',
+      background: 'linear-gradient(135deg,#fffbe9,#ffe9e9,#fff,#d5f8e9)',
+      color: '#176b39',
+      width: 280,
+      customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
+      willOpen: popup => { popup.style.borderRadius = '14px'; }
     });
     btn.disabled = false;
     btn.innerHTML = 'SEARCH';
     return;
-}
+  }
 
     // Jika ada result
     if (found) {
