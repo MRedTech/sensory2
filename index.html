@@ -771,6 +771,7 @@ async function handleUniversalSearch() {
   btn.innerHTML = '<span class="loader"></span> SEARCHING...';
 
   let found = null;
+  let hasHyperlink = false;
   let valueNorm = normalize(input);
 
   try {
@@ -778,6 +779,7 @@ async function handleUniversalSearch() {
     let res = await searchRecord('regnum', valueNorm);
     if (res.exist) {
       found = res.data;
+      hasHyperlink = res.hasHyperlink ?? false; // ✅ ambil nilai betul dari Apps Script
     }
 
     // 2. Jika tak jumpa, cuba MYKAD/PASSPORT
@@ -785,13 +787,11 @@ async function handleUniversalSearch() {
       res = await searchRecord('mykadPassport', valueNorm);
       if (res.exist) {
         found = res.data;
+        hasHyperlink = res.hasHyperlink ?? false; // ✅ ulang lagi
       }
     }
 
-    // ✅ CHECK PHOTO LINK WUJUD
-    let hasHyperlink = found?.photoLink?.startsWith("https://") ?? false;
-
-    // ❗Jika tiada link gambar
+    // ❗Jika tiada link gambar walaupun rekod wujud
     if (found && !hasHyperlink) {
       Swal.fire({
         title: "PLEASE RETAKE ID PHOTO",
