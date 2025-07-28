@@ -779,7 +779,6 @@ async function handleUniversalSearch() {
         let res = await searchRecord('regnum', valueNorm);
         if (res.exist) {
             found = res.data;
-            hasHyperlink = res.hasHyperlink || false;
         }
 
         // 2. Jika tak jumpa, cuba cari ikut MYKAD/PASSPORT
@@ -787,7 +786,6 @@ async function handleUniversalSearch() {
             res = await searchRecord('mykadPassport', valueNorm);
             if (res.exist) {
                 found = res.data;
-                hasHyperlink = res.hasHyperlink || false;
             }
         }
 
@@ -802,7 +800,7 @@ async function handleUniversalSearch() {
                 cancelButtonText: 'NO',
                 background: 'linear-gradient(135deg,#e9f5e9,#fff,#d5ffe0)',
                 color: '#176B39',
-                width: 280,
+                width: 300,
                 customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
                 willOpen: popup => { popup.style.borderRadius = "14px"; }
             });
