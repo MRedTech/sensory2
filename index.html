@@ -762,104 +762,105 @@ async function searchRecord(field, value) {
 
 // Fungsi utama universal search
 async function handleUniversalSearch() {
-    const btn = document.getElementById('searchButton');
-    const input = document.getElementById('searchUniversal').value.trim();
-    if (!input) return;
+  const btn = document.getElementById('searchButton');
+  const input = document.getElementById('searchUniversal').value.trim();
+  if (!input) return;
 
-    // Spinner start
-    btn.disabled = true;
-    btn.innerHTML = '<span class="loader"></span> SEARCHING...';
+  // Spinner start
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> SEARCHING...';
 
-    let found = null;
-    let hasHyperlink = false;
-    let valueNorm = normalize(input);
+  let found = null;
+  let valueNorm = normalize(input);
 
-    try {
-        // 1. Cuba cari ikut REGNUM dulu
-        let res = await searchRecord('regnum', valueNorm);
-        if (res.exist) {
-            found = res.data;
-        }
-
-        // 2. Jika tak jumpa, cuba cari ikut MYKAD/PASSPORT
-        if (!found) {
-            res = await searchRecord('mykadPassport', valueNorm);
-            if (res.exist) {
-                found = res.data;
-            }
-        }
-
-        // === Check hyperlink (must check after found) ===
-        if (found && hasHyperlink === false) {
-            Swal.fire({
-                title: "PLEASE RETAKE ID PHOTO",
-                text: "Previous record expired.",
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonText: 'YES, RETAKE ID',
-                cancelButtonText: 'NO',
-                background: 'linear-gradient(135deg,#e9f5e9,#fff,#d5ffe0)',
-                color: '#176B39',
-                width: 300,
-                customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
-                willOpen: popup => { popup.style.borderRadius = "14px"; }
-            });
-            btn.disabled = false;
-            btn.innerHTML = 'SEARCH';
-            return;
-        }
-
-        // === Jika ada result, autofill ===
-        if (found) {
-            Swal.fire({
-                title: 'RECORD FOUND',
-                text: 'Autofill this form with record details?',
-                icon: 'success',
-                showCancelButton: true,
-                confirmButtonText: 'YES, AUTOFILL',
-                cancelButtonText: 'NO',
-                background: 'linear-gradient(135deg,#e9f5e9,#fff,#d5ffe0)',
-                color: '#176B39',
-                width: 280,
-                customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
-                willOpen: popup => { popup.style.borderRadius = "14px"; }
-            }).then((res) => {
-                if (res.isConfirmed) {
-                    autofillForm(found);
-                    document.getElementById('registrationForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-                document.getElementById('searchUniversal').value = "";
-            });
-        } else {
-            Swal.fire({
-                title: 'NOT FOUND',
-                text: 'No record found.',
-                icon: 'warning',
-                confirmButtonText: 'OK',
-                background: 'linear-gradient(135deg,#e9f5e9,#fff,#d5ffe0)',
-                color: '#176B39',
-                width: 280,
-                customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
-                willOpen: popup => { popup.style.borderRadius = "14px"; }
-            }).then(() => {
-                document.getElementById('searchUniversal').value = "";
-            });
-        }
-
-    } catch (err) {
-        Swal.fire({
-            title: 'ERROR',
-            text: err.message || 'Search failed!',
-            icon: 'error',
-            confirmButtonText: 'OK',
-        });
-    } finally {
-        // Spinner reset
-        btn.disabled = false;
-        btn.innerHTML = 'SEARCH';
+  try {
+    // 1. Cuba cari ikut REGNUM
+    let res = await searchRecord('regnum', valueNorm);
+    if (res.exist) {
+      found = res.data;
     }
-}
 
+    // 2. Jika tak jumpa, cuba MYKAD/PASSPORT
+    if (!found) {
+      res = await searchRecord('mykadPassport', valueNorm);
+      if (res.exist) {
+        found = res.data;
+      }
+    }
+
+    // ✅ CHECK PHOTO LINK WUJUD
+    let hasHyperlink = found?.photoLink?.startsWith("https://") ?? false;
+
+    // ❗Jika tiada link gambar
+    if (found && !hasHyperlink) {
+      Swal.fire({
+        title: "PLEASE RETAKE ID PHOTO",
+        text: "Previous record expired.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: 'YES, RETAKE ID',
+        cancelButtonText: 'NO',
+        background: 'linear-gradient(135deg,#e9f5e9,#fff,#d5ffe0)',
+        color: '#176B39',
+        width: 300,
+        customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
+        willOpen: popup => { popup.style.borderRadius = "14px"; }
+      });
+      btn.disabled = false;
+      btn.innerHTML = 'SEARCH';
+      return;
+    }
+
+    // ✅ Kalau jumpa data, autofill
+    if (found) {
+      Swal.fire({
+        title: 'RECORD FOUND',
+        text: 'Autofill this form with record details?',
+        icon: 'success',
+        showCancelButton: true,
+        confirmButtonText: 'YES, AUTOFILL',
+        cancelButtonText: 'NO',
+        background: 'linear-gradient(135deg,#e9f5e9,#fff,#d5ffe0)',
+        color: '#176B39',
+        width: 300,
+        customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
+        willOpen: popup => { popup.style.borderRadius = "14px"; }
+      }).then((res) => {
+        if (res.isConfirmed) {
+          autofillForm(found);
+          document.getElementById('registrationForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        document.getElementById('searchUniversal').value = "";
+      });
+    } else {
+      Swal.fire({
+        title: 'NOT FOUND',
+        text: 'No record found.',
+        icon: 'warning',
+        confirmButtonText: 'OK',
+        background: 'linear-gradient(135deg,#e9f5e9,#fff,#d5ffe0)',
+        color: '#176B39',
+        width: 300,
+        customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
+        willOpen: popup => { popup.style.borderRadius = "14px"; }
+      }).then(() => {
+        document.getElementById('searchUniversal').value = "";
+      });
+    }
+
+  } catch (err) {
+    Swal.fire({
+      title: 'ERROR',
+      text: err.message || 'Search failed!',
+      icon: 'error',
+      confirmButtonText: 'OK',
+    });
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'SEARCH';
+  }
+}
+    
     // Fungsi autofill form
 function autofillForm(data) {
   if (data.namePassport) document.getElementById('namePassport').value = data.namePassport;
