@@ -468,11 +468,19 @@
       if (mykadInput) {
         mykadInput.addEventListener('input', function () {
           let val = this.value.toUpperCase();
+          // === AUTO-FORMAT MYKAD WITH DASHES ===
+          if (result.docType === "MYKAD") {
+          const ic = result.idnum.replace(/[^0-9]/g, "");
+          if (/^\d{12}$/.test(ic)) {
+          const formatted = ic.replace(/(\d{6})(\d{2})(\d{4})/, "$1-$2-$3");
+          document.getElementById('mykadPassport').value = formatted;
+         }
+       }
           // Kalau semua nombor & panjang 12, auto-format dash
           if (/^\d{12}$/.test(val)) {
             this.value = val.replace(/(\d{6})(\d{2})(\d{4})/, "$1-$2-$3");
           } else {
-            // Kalau bukan 12 digit (maksudnya mungkin passport, lesen, dsb), biar user taip asal (huruf/nombor)
+          // Kalau bukan 12 digit (maksudnya mungkin passport, lesen, dsb), biar user taip asal (huruf/nombor)
             this.value = val.replace(/[^A-Z0-9]/g, '');
           }
         });
@@ -673,14 +681,24 @@
           document.body.style.cursor = 'default';
 
           if (result.name) {
-            const rawName   = result.name.toUpperCase().trim();
-            const cleanName = filterNonNameWords(rawName);
-            document.getElementById('namePassport').value = cleanName;
-          }
-          if (result.idnum) {
-            document.getElementById('mykadPassport').value = result.idnum.toUpperCase();
-          }
+  const rawName = result.name.toUpperCase().trim();
+  const cleanName = filterNonNameWords(rawName);
+  document.getElementById('namePassport').value = cleanName;
+}
 
+if (result.idnum) {
+  // Set asal dulu (uppercase)
+  document.getElementById('mykadPassport').value = result.idnum.toUpperCase();
+
+  // === AUTO-FORMAT MYKAD WITH DASHES ===
+  if (result.docType === "MYKAD") {
+    const ic = result.idnum.replace(/[^0-9]/g, '');   // buang semua selain nombor
+    if (/^\d{12}$/.test(ic)) {                       // kalau cukup 12 digit
+      const formatted = ic.replace(/(\d{6})(\d{2})(\d{4})/, "$1-$2-$3");
+      document.getElementById('mykadPassport').value = formatted;
+    }
+  }
+}
         } catch (err) {
           document.body.style.cursor = 'default';
           alert("Autofill GAGAL: " + err.message);
