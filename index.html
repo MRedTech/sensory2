@@ -827,11 +827,16 @@
           title: 'MISSING INFORMATION',
           text: 'Please specify OTHER CATEGORY.',
           icon: 'warning',
-          confirmButtonText: 'OK'
+          confirmButtonText: 'OK',
+          background: 'linear-gradient(135deg,#e9f5e9,#fff,#d5ffe0)',
+          color: '#176B39',
+          width: 300,
+          customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
+          willOpen: (popup) => { popup.style.borderRadius = '14px' }
         });
         return;
-      }
-
+       }
+      
       // OWNER/TENANT -> wajib unit number
       if ((remark === 'OWNER' || remark === 'TENANT') && unit === '') {
         e.preventDefault();
@@ -840,6 +845,11 @@
           text: 'Please enter UNIT NUMBER.',
           icon: 'warning',
           confirmButtonText: 'OK'
+          background: 'linear-gradient(135deg,#e9f5e9,#fff,#d5ffe0)',
+          color: '#176B39',
+          width: 300,
+          customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
+          willOpen: (popup) => { popup.style.borderRadius = '14px' }
         });
         return;
       }
@@ -852,6 +862,11 @@
           text: 'Please select REASON.',
           icon: 'warning',
           confirmButtonText: 'OK'
+          background: 'linear-gradient(135deg,#e9f5e9,#fff,#d5ffe0)',
+          color: '#176B39',
+          width: 300,
+          customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
+          willOpen: (popup) => { popup.style.borderRadius = '14px' }
         });
         return;
       }
@@ -864,6 +879,11 @@
           text: 'Please specify OTHER REASON.',
           icon: 'warning',
           confirmButtonText: 'OK'
+          background: 'linear-gradient(135deg,#e9f5e9,#fff,#d5ffe0)',
+          color: '#176B39',
+          width: 300,
+          customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
+          willOpen: (popup) => { popup.style.borderRadius = '14px' }
         });
         return;
       }
