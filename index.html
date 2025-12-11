@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SECURE ENTRY SYSTEM</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ===================== GLOBAL STYLES ===================== -->
+  <style>
+
+  /* ---------- GLOBAL PAGE STYLE ---------- */
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #e9f5e9;
+    padding: 20px;
+    text-transform: uppercase;
+  }
+
+  h2 {
+    color: #2b7a2b;
+    text-align: center;
+    margin-top: 0.10px;
+    margin-bottom: 30px;
+  }
+
+  /* ---------- TOP CLOCK BAR ---------- */
+  .clock-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 180px;
+    margin: 0 auto 13px auto;
+    padding: 2.5px 12px;
+    border-radius: 11px;
+    background: linear-gradient(90deg, #41e671 0%, #176B39 100%);
+    box-shadow: 0 1px 4px 0 #bbdfbb70;
+    font-size: 11px;
+    color: #fff;
+    letter-spacing: 1.4px;
+    font-weight: bold;
+    opacity: 0.90;
+  }
+
+  /* ---------- HEADER TEXT GRADIENT ---------- */
+  .header-gradient {
+    background: linear-gradient(145deg, #3bd97b 0%, #2b7a2b 100%);
+    font-weight: 900;
+    letter-spacing: 1.6px;
+    font-size: 1.8rem;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ---------- UNIVERSAL BUTTON (3D GREEN) ---------- */
+  .btn-3d {
+    background: linear-gradient(145deg, #3bd97b 0%, #2b7a2b 100%);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 10px 22px;
+    box-shadow: 0 3px 12px 0 #bbdfbb, 0 1.5px 3px #3333;
+    letter-spacing: 1.6px;
+    cursor: pointer;
+    transition: box-shadow 0.18s, transform 0.1s;
+  }
+  .btn-3d:active {
+    box-shadow: 0 2px 5px #bbb;
+    transform: translateY(2px);
+  }
+  .submit-3d { width: 100%; margin-top: 14px; }
+
+  /* ---------- PHOTO PREVIEW ---------- */
+  .photo-label {
+    color: #2b7a2b;
+    font-weight: bold;
+    font-size: 13px;
+    margin-top: 4px;
+    margin-bottom: 3px;
+    display: block;
+  }
+
+  .image-container {
+    position: relative;
+    display: none;
+    margin-top: 10px;
+    margin-bottom: 12px;
+    width: 100%;
+    max-height: 220px;
+    overflow: hidden;
+    background-color: #f0f0f0;
+    border: 1px solid #2b7a2b;
+    border-radius: 6px;
+  }
+
+  .image-container img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
+
+  .watermark {
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%) rotate(-40deg);
+    color: red;
+    font-weight: bold;
+    opacity: 0.75;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  /* ---------- LABEL & INPUT ---------- */
+  label {
+    display: block;
+    margin-top: 10px;
+    color: #2b7a2b;
+    font-weight: bold;
+    font-size: 13px;
+  }
+
+  input, select {
+    width: 100%;
+    padding: 7px 9px;
+    margin-top: 4px;
+    border: 1px solid #2b7a2b;
+    border-radius: 8px;
+    text-transform: uppercase;
+    background-color: #e9f7ff;
+    font-weight: bold;
+  }
+
+  select:invalid,
+  select option[value=""] {
+    color: #888888 !important;
+  }
+
+  /* ---------- CALL BUTTON ---------- */
+  .phone-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .phone-container input { flex: 1; margin-right: 6px; }
+
+  .call-btn-3d {
+    display: none;
+    background: linear-gradient(145deg, #41e671 0%, #176B39 100%);
+    color: #fff;
+    border-radius: 100%;
+    width: 50px; height: 50px;
+    justify-content: center; align-items: center;
+    font-size: 17px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 3px 10px #8ed5a3;
+    transition: 0.18s;
+  }
+
+  /* ---------- FOOTER ---------- */
+  .footer {
+    text-align: center;
+    padding: 5px;
+    font-size: 10px;
+    color: #888;
+    margin-top: 24px;
+    font-weight: bold;
+  }
+
+  /* ---------- SEARCH BOX CARD ---------- */
+  .search-minicard {
+    max-width: 330px;
+    margin: 18px auto 22px auto;
+    background: #fff;
+    border-radius: 13px;
+    box-shadow: 0 2px 8px #176b3917;
+    padding: 12px 15px 16px 15px;
+  }
+
+  .search-mini-title {
+    display: flex; justify-content: center; align-items: center;
+    font-weight: bold;
+    margin-bottom: 9px;
+    color: #176B39;
+  }
+
+  .search-mini-input {
+    width: 100%;
+    padding: 6.5px 10px;
+    border-radius: 7px;
+    border: 1.5px solid #176B39;
+    background: #e9f7ff;
+    margin-bottom: 9px;
+    font-size: 14px;
+  }
+
+  /* ---------- CAMERA MODAL ---------- */
+  .camera-modal {
+    position: fixed; top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    justify-content: center; align-items: center;
+    z-index: 99999;
+  }
+
+  .camera-container {
+    position: relative;
+    width: 94vw; max-width: 400px;
+    aspect-ratio: 4/3;
+    background: #000;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .guideline {
+    position: absolute;
+    left: 4%; top: 4%;
+    width: 92%; height: 92%;
+    border: 3px solid #28cc6c;
+    border-radius: 8px;
+    pointer-events: none;
+  }
+
+  </style>
+</head>
+
+<body>
+
+  <!-- CLOCK BAR -->
+  <div class="clock-bar">
+    <span id="liveDateOnly"></span>
+    <span id="liveTimeOnly"></span>
+  </div>
+
+  <!-- HEADER -->
+  <div style="text-align:center; margin-bottom:8px;">
+    <h2 class="header-gradient">SECURE ENTRY</h2>
+    <div style="color:#489167; font-size:13px; letter-spacing:0.6px;">REGISTER.ACCESS.SECURE</div>
+    <div style="height:3px; width:60px; margin:6px auto; background:linear-gradient(90deg,#3bd97b 20%,#2b7a2b 80%); border-radius:2px;"></div>
+  </div>
+
+  <!-- SEARCH RECORD CARD -->
+  <div class="search-minicard">
+    <div class="search-mini-title">
+      <span style="margin-right:7px;">🔎</span> SEARCH RECORD
+    </div>
+
+    <input id="searchUniversal" type="text" class="search-mini-input"
+           placeholder="MYKAD / PASSPORT / REG NO">
+
+    <button id="searchButton" class="btn-3d search-mini-btn" type="button"
+            onclick="handleUniversalSearch()">SEARCH</button>
+  </div>
+
+  <!-- TAKE PHOTO -->
+  <div class="top-action" style="text-align:center;">
+    <button type="button" class="btn-3d" onclick="openCamera()">TAKE PICTURE</button>
+    <span class="photo-label">Take photo of MyKad/Licence</span>
+  </div>
+
+  <!-- PHOTO PREVIEW -->
+  <div class="image-container" id="imageContainer">
+    <img id="preview" src="#">
+    <div class="watermark">SENSORY USE ONLY</div>
+  </div>
+
+  <!-- ===================== FORM START ===================== -->
+
+  <form id="registrationForm" autocomplete="off">
+
+    <label for="namePassport">NAME</label>
+    <input type="text" id="namePassport" required>
+
+    <label for="mykadPassport">MYKAD / PASSPORT</label>
+    <input type="text" id="mykadPassport" required>
+
+    <label for="regnum">REGISTRATION NUMBER</label>
+    <input type="text" id="regnum" required>
+
+    <label for="contact">CONTACT NUMBER</label>
+    <div class="phone-container">
+      <input type="tel" id="contact" required maxlength="15">
+      <a id="callBtn" class="call-btn-3d"><span>📞</span></a>
+    </div>
+
+    <label for="remark">CATEGORY</label>
+    <select id="remark" required>
+      <option value="">-PLEASE SELECT-</option>
+      <option value="OWNER">OWNER</option>
+      <option value="TENANT">TENANT</option>
+      <option value="DROP OFF/PICK UP">DROP OFF/PICK UP</option>
+      <option value="GRAB FOOD">GRAB FOOD</option>
+      <option value="FOOD PANDA">FOOD PANDA</option>
+      <option value="E-HAILING">E-HAILING</option>
+      <option value="FLASH EXPRESS">FLASH EXPRESS</option>
+      <option value="SHOPEE EXPRESS">SHOPEE EXPRESS</option>
+      <option value="SHOPEE FOOD">SHOPEE FOOD</option>
+      <option value="GDEX">GDEX</option>
+      <option value="LAZADA">LAZADA</option>
+      <option value="LALAMOVE">LALAMOVE</option>
+      <option value="MCD FOOD DELIVERY">MCD FOOD DELIVERY</option>
+      <option value="OTHER">OTHER</option>
+    </select>
+
+    <input type="text" id="unitNumber" placeholder="UNIT NUMBER" style="display:none;">
+
+    <!-- REASON FOR OWNER/TENANT -->
+    <div id="reasonSection" style="display:none;">
+      <label for="reasonSelect">REASON</label>
+      <select id="reasonSelect">
+        <option value="">-PLEASE SELECT-</option>
+        <option value="Block card">Block card</option>
+        <option value="Lost card">Lost card</option>
+        <option value="Forget card">Forget card</option>
+        <option value="Damaged card">Damaged card</option>
+        <option value="Under management process">Under management process</option>
+        <option value="Insufficient card">Insufficient card</option>
+        <option value="Clone card">Clone card</option>
+        <option value="Other">Other</option>
+      </select>
+
+      <input type="text" id="reasonOther" placeholder="PLEASE SPECIFY" style="display:none;">
+    </div>
+
+    <!-- OTHER CATEGORY EXTRA INPUT -->
+    <input type="text" id="otherCategory" placeholder="PLEASE SPECIFY" style="display:none;">
+
+    <label for="tower">TOWER</label>
+    <select id="tower" required>
+      <option value="">-PLEASE SELECT-</option>
+      <option value="TOWER A">TOWER A</option>
+      <option value="TOWER B">TOWER B</option>
+      <option value="TOWER A & B">TOWER A & B</option>
+    </select>
+
+    <button type="submit" class="btn-3d submit-3d" id="submitBtn">SUBMIT</button>
+
+  </form>
+
+  <div class="footer">POWERED BY MRED TECH</div>
+
+  <!-- CAMERA MODAL -->
+  <div id="cameraModal" class="camera-modal">
+    <div class="camera-container">
+      <video id="camera-video" autoplay></video>
+      <div class="guideline"></div>
+      <button type="button" class="close-cam-btn" onclick="closeCameraModal()">×</button>
+    </div>
+    <button type="button" class="capture-btn-3d" onclick="captureImage()">CAPTURE</button>
+  </div>
+
+  <!-- ===================== JAVASCRIPT START ===================== -->
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+/* ============================================================
+      🔥 UNIVERSAL SWAL FIRE TEMPLATE (STANDARD)
+   ============================================================ */
+
+// SUCCESS – Hijau Sensory
+function swalSuccess(title, text) {
+  return Swal.fire({
+    title,
+    text,
+    icon: "success",
+    background: "linear-gradient(135deg,#e9f5e9,#ffffff,#d5ffe0)",
+    color: "#176B39",
+    width: 300,
+    confirmButtonText: "OK",
+    customClass: { popup: "shadow-2xl px-7 pt-7 pb-6" },
+    willOpen: p => p.style.borderRadius = "14px"
+  });
+}
+
+// WARNING – Missing Information (KUNING)
+function swalWarning(title, text) {
+  return Swal.fire({
+    title,
+    text,
+    icon: "warning",
+    background: "linear-gradient(135deg,#FFF3B0,#FFD54F,#FFCA28)",
+    color: "#5A4A00",
+    width: 300,
+    confirmButtonText: "OK",
+    customClass: { popup: "shadow-2xl px-7 pt-7 pb-6" },
+    willOpen: p => p.style.borderRadius = "14px"
+  });
+}
+
+// ERROR
+function swalError(title, text) {
+  return Swal.fire({
+    title,
+    text,
+    icon: "error",
+    background: "linear-gradient(135deg,#ffe5e5,#ffffff,#ffb3b3)",
+    color: "#4a0000",
+    width: 300,
+    confirmButtonText: "OK",
+    customClass: { popup: "shadow-2xl px-7 pt-7 pb-6" },
+    willOpen: p => p.style.borderRadius = "14px"
+  });
+}
+
+</script>
+
+
+<script>
+/* ============================================================
+      🔥 MYKAD / PASSPORT INPUT AUTO FORMAT
+   ============================================================ */
+const mykadInput = document.getElementById("mykadPassport");
+mykadInput.addEventListener("input", function () {
+  let val = this.value.toUpperCase();
+  if (/^\d{12}$/.test(val)) {
+    this.value = val.replace(/(\d{6})(\d{2})(\d{4})/, "$1-$2-$3");
+  } else {
+    this.value = val.replace(/[^A-Z0-9]/g, "");
+  }
+});
+</script>
+
+
+<script>
+/* ============================================================
+      🔥 CALL BUTTON SHOW/HIDE
+   ============================================================ */
+function updateCallLink() {
+  const phone = contact.value.trim();
+  if (phone.length >= 10) {
+    callBtn.href = "tel:" + phone;
+    callBtn.style.display = "flex";
+  } else {
+    callBtn.style.display = "none";
+  }
+}
+</script>
+
+
+<script>
+/* ============================================================
+      🔥 CATEGORY DISPLAY LOGIC
+   ============================================================ */
+const remarkSelect  = document.getElementById("remark");
+const unitNumber    = document.getElementById("unitNumber");
+const reasonSection = document.getElementById("reasonSection");
+const reasonSelect  = document.getElementById("reasonSelect");
+const reasonOther   = document.getElementById("reasonOther");
+const otherCategory = document.getElementById("otherCategory");
+
+// Category change
+remarkSelect.addEventListener("change", function () {
+  let isResident = (this.value === "OWNER" || this.value === "TENANT");
+
+  // Unit + Reason appear only for owner/tenant
+  unitNumber.style.display     = isResident ? "block" : "none";
+  reasonSection.style.display  = isResident ? "block" : "none";
+
+  if (!isResident) {
+    unitNumber.value = "";
+    reasonSelect.value = "";
+    reasonOther.value = "";
+    reasonOther.style.display = "none";
+  }
+
+  // Show OTHER input
+  otherCategory.style.display = (this.value === "OTHER") ? "block" : "none";
+  if (this.value !== "OTHER") otherCategory.value = "";
+});
+</script>
+
+
+<script>
+/* ============================================================
+      🔥 REASON SELECT HANDLER
+   ============================================================ */
+reasonSelect.addEventListener("change", function () {
+  const val = this.value;
+
+  // Show extra reason field if Other
+  if (val === "Other") {
+    reasonOther.style.display = "block";
+  } else {
+    reasonOther.style.display = "none";
+    reasonOther.value = "";
+  }
+
+  // Clone Card = MERAH
+  if (val.toUpperCase() === "CLONE CARD") {
+    this.style.color = "red";
+    this.style.fontWeight = "bold";
+  } else if (val === "") {
+    this.style.color = "#888888";
+    this.style.fontWeight = "bold";
+  } else {
+    this.style.color = "#000";
+    this.style.fontWeight = "bold";
+  }
+});
+</script>
+
+
+<script>
+/* ============================================================
+      🔥 CAMERA SYSTEM + CROPPING + OCR
+   ============================================================ */
+
+// (Code sama seperti sebelum ini, hanya diringkaskan untuk ruang)
+let stream = null;
+let video  = null;
+
+function openCamera() {
+  document.getElementById("cameraModal").style.display = "flex";
+  startCamera();
+}
+
+async function startCamera() {
+  video = document.getElementById("camera-video");
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    video.srcObject = stream;
+  } catch (e) { swalError("CAMERA ERROR", e.message); closeCameraModal(); }
+}
+
+function closeCameraModal() {
+  document.getElementById("cameraModal").style.display = "none";
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+}
+
+function applyGrayscaleContrast(canvas) {
+  const ctx = canvas.getContext("2d");
+  const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const d = img.data;
+
+  let minL = 255, maxL = 0;
+
+  for (let i=0;i<d.length;i+=4) {
+    let lum = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+    minL = Math.min(minL, lum);
+    maxL = Math.max(maxL, lum);
+    d[i] = d[i+1] = d[i+2] = lum;
+  }
+
+  const range = Math.max(1, maxL - minL);
+
+  for (let i=0;i<d.length;i+=4) {
+    let lum = ((d[i] - minL) * 255) / range;
+    lum = Math.max(0, Math.min(255, lum));
+    d[i] = d[i+1] = d[i+2] = lum;
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+/* ====================== CAPTURE IMAGE ====================== */
+function captureImage() {
+  if (!video) return;
+
+  const container = document.querySelector(".camera-container");
+  const guide = document.querySelector(".guideline");
+
+  const r = guide.getBoundingClientRect();
+  const c = container.getBoundingClientRect();
+
+  const left   = (r.left - c.left) / c.width;
+  const top    = (r.top - c.top) / c.height;
+  const width  = r.width / c.width;
+  const height = r.height / c.height;
+
+  const canvas = document.createElement("canvas");
+  canvas.width  = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(video, 0, 0);
+
+  const cropCanvas = document.createElement("canvas");
+  cropCanvas.width  = canvas.width  * width;
+  cropCanvas.height = canvas.height * height;
+
+  cropCanvas.getContext("2d").drawImage(
+    canvas,
+    canvas.width*left, canvas.height*top,
+    canvas.width*width, canvas.height*height,
+    0, 0, cropCanvas.width, cropCanvas.height
+  );
+
+  applyGrayscaleContrast(cropCanvas);
+
+  const compressed = cropCanvas.toDataURL("image/jpeg", 0.9);
+
+  preview.src = compressed;
+  imageContainer.style.display = "block";
+  closeCameraModal();
+
+  sendToOCR(compressed);
+}
+
+async function sendToOCR(imageBase64) {
+  try {
+    const res = await fetch("https://sensory-vision2.edreborn86.workers.dev", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image: imageBase64.split(",")[1] })
+    });
+
+    const json = await res.json();
+
+    if (json.name) namePassport.value = cleanName(json.name);
+    if (json.idnum) mykadPassport.value = json.idnum.toUpperCase();
+
+  } catch (err) {
+    swalError("OCR FAILED", err.message);
+  }
+}
+
+// Remove unwanted words from name
+const NON_NAME = ["MALAYSIA","MYKAD","IDENTITY","CARD","WARGANEGARA","SEX","MALE","FEMALE","JANTINA","PASSPORT","LICENCE","DRIVING"];
+
+function cleanName(n) {
+  return n
+    .toUpperCase()
+    .split(" ")
+    .filter(w => !NON_NAME.includes(w))
+    .join(" ");
+}
+
+</script>
+
+
+<script>
+/* ============================================================
+      🔥 UNIVERSAL SEARCH RECORD
+   ============================================================ */
+
+const WORKER_URL = "https://ext-mredtech.edreborn86.workers.dev";
+
+function normalize(str) {
+  return (str || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+async function searchRecord(field, value) {
+  const res = await fetch(`${WORKER_URL}?field=${field}&value=${value}`);
+  return await res.json();
+}
+
+async function handleUniversalSearch() {
+  const btn = searchButton;
+  const input = normalize(searchUniversal.value.trim());
+  if (!input) return;
+
+  btn.disabled = true;
+  btn.innerHTML = `<span class="loader"></span> SEARCHING...`;
+
+  let found = null;
+  let hyperlink = false;
+
+  try {
+    let res = await searchRecord("regnum", input);
+    if (res.exist) { found = res.data; hyperlink = res.hasHyperlink; }
+
+    if (!found) {
+      res = await searchRecord("mykadPassport", input);
+      if (res.exist) { found = res.data; hyperlink = res.hasHyperlink; }
+    }
+
+    // Previous expired
+    if (found && !hyperlink) {
+      Swal.fire({
+        title: "PREVIOUS RECORD EXPIRED",
+        text: "Please retake ID photo.",
+        icon: "warning",
+        background: "linear-gradient(135deg,#fff9c4,#ffeb3b,#fbc02d)",
+        color: "#176b39",
+        width: 300,
+        showCancelButton: true,
+        confirmButtonText: "YES, RETAKE",
+        cancelButtonText: "NO",
+      }).then(r => { if (r.isConfirmed) openCamera(); });
+
+      btn.disabled = false;
+      btn.innerHTML = `SEARCH`;
+      return;
+    }
+
+    if (found) {
+      Swal.fire({
+        title: "RECORD FOUND",
+        text: "Autofill this form?",
+        icon: "success",
+        background: "linear-gradient(135deg,#e9f5e9,#ffffff,#d5ffe0)",
+        color: "#176B39",
+        width: 300,
+        showCancelButton: true,
+        confirmButtonText: "YES",
+        cancelButtonText: "NO",
+      }).then(r => {
+        if (r.isConfirmed) autofillForm(found);
+      });
+    } else {
+      swalWarning("NOT FOUND", "No record found.");
+    }
+
+  } catch (err) {
+    swalError("SEARCH ERROR", err.message);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = `SEARCH`;
+}
+
+function autofillForm(d) {
+  if (d.namePassport) namePassport.value = d.namePassport;
+  if (d.mykadPassport) mykadPassport.value = d.mykadPassport;
+  if (d.regnum) regnum.value = d.regnum;
+  if (d.contact) contact.value = d.contact;
+  if (d.tower) tower.value = d.tower;
+
+  if (d.remark === "OWNER" || d.remark === "TENANT") {
+    remark.value = d.remark;
+    remark.dispatchEvent(new Event("change"));
+  }
+}
+
+</script>
+
+
+<script>
+/* ============================================================
+      🔥 BLOCK SUBMIT 100% IF ANY REQUIRED FIELD MISSING
+   ============================================================ */
+
+const form = document.getElementById("registrationForm");
+
+form.addEventListener("submit", async function (e) {
+  e.preventDefault();  // STOP SUBMIT ALWAYS FIRST
+
+  const remarkVal     = remark.value;
+  const unitVal       = unitNumber.value.trim();
+  const otherVal      = otherCategory.value.trim();
+  const reasonVal     = reasonSelect.value;
+  const reasonOtherVal= reasonOther.value.trim();
+
+  // Missing name
+  if (!namePassport.value.trim()) return swalWarning("MISSING INFORMATION", "Please enter NAME.");
+
+  if (!mykadPassport.value.trim()) return swalWarning("MISSING INFORMATION", "Please enter MYKAD / PASSPORT.");
+
+  if (!regnum.value.trim()) return swalWarning("MISSING INFORMATION", "Please enter REGISTRATION NUMBER.");
+
+  if (!contact.value.trim()) return swalWarning("MISSING INFORMATION", "Please enter CONTACT NUMBER.");
+
+  if (!remarkVal) return swalWarning("MISSING INFORMATION", "Please select CATEGORY.");
+
+  // Owner/Tenant rules
+  if ((remarkVal === "OWNER" || remarkVal === "TENANT")) {
+
+    if (!unitVal) return swalWarning("MISSING INFORMATION", "Please enter UNIT NUMBER.");
+
+    if (!reasonVal) return swalWarning("MISSING INFORMATION", "Please select REASON.");
+
+    if (reasonVal === "Other" && !reasonOtherVal)
+      return swalWarning("MISSING INFORMATION", "Please specify OTHER REASON.");
+  }
+
+  // OTHER category
+  if (remarkVal === "OTHER" && !otherVal)
+    return swalWarning("MISSING INFORMATION", "Please specify OTHER CATEGORY.");
+
+  if (!tower.value) return swalWarning("MISSING INFORMATION", "Please select TOWER.");
+
+  // IMAGE REQUIRED
+  if (preview.src === "#" || preview.src.length < 30)
+    return swalWarning("MISSING INFORMATION", "Please take an ID PHOTO.");
+
+  // ======================================================
+  // ALL DATA COMPLETE → NOW SUBMIT
+  // ======================================================
+
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = `<span class="spinner"></span> PLEASE WAIT...`;
+
+  try {
+    const payload = {
+      namePassport: namePassport.value,
+      mykadPassport: mykadPassport.value,
+      regnum: regnum.value,
+      contact: contact.value,
+      remark: remarkVal,
+      unitNumber: unitVal,
+      tower: tower.value,
+      reason: reasonVal,
+      reasonOther: reasonOtherVal,
+      otherCategory: otherVal,
+      imageUrl: preview.src.split(",")[1]
+    };
+
+    const res = await fetch("https://ext-mredtech.edreborn86.workers.dev", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const json = await res.json();
+
+    if (json.success) {
+      await swalSuccess("SUCCESS!", "Data submitted successfully.");
+      form.reset();
+      imageContainer.style.display = "none";
+      reasonSection.style.display = "none";
+      otherCategory.style.display = "none";
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = "SUBMIT";
+    } else {
+      swalError("SUBMIT ERROR", json.message || "Unknown error.");
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = "SUBMIT";
+    }
+
+  } catch (err) {
+    swalError("SYSTEM ERROR", err.message);
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = "SUBMIT";
+  }
+
+});
+</script>
+
+
+<script>
+/* ============================================================
+      🔥 LIVE CLOCK
+   ============================================================ */
+function pad(n){ return n<10 ? "0"+n : n; }
+
+function updateDateTime() {
+  const now = new Date();
+  liveDateOnly.textContent = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()}`;
+  liveTimeOnly.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+}
+
+setInterval(updateDateTime, 1000);
+updateDateTime();
+</script>
+
+<!-- ===================== END OF JS ===================== -->
+
+</body>
+</html>
