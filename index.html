@@ -832,61 +832,77 @@ document.getElementById('imageInput').addEventListener('change', function(event)
     });
 
     // === CATEGORY, UNIT NUMBER & REASON DROPDOWN ===
-    const remarkSelect  = document.getElementById('remark');
-    const otherField    = document.getElementById('otherCategory');
-    const unitField     = document.getElementById('unitNumber');
-    const reasonSection = document.getElementById('reasonSection');
-    const reasonSelect  = document.getElementById('reasonSelect');
-    const reasonOther   = document.getElementById('reasonOther');
+const remarkSelect  = document.getElementById('remark');
+const otherField    = document.getElementById('otherCategory');
+const unitField     = document.getElementById('unitNumber');
+const reasonSection = document.getElementById('reasonSection');
+const reasonSelect  = document.getElementById('reasonSelect');
+const reasonOther   = document.getElementById('reasonOther');
 
-    // Tunjuk/hide unit number & reason ikut pilihan category
-    remarkSelect.addEventListener('change', function() {
-      const val = this.value.toUpperCase();
+// pastikan mula-mula tidak required
+unitField.required = false;
+otherField.required = false;
+reasonSelect.required = false;
+reasonOther.required = false;
 
-      // UNIT NUMBER & REASON hanya untuk OWNER/TENANT
-      const isResident = (val === 'OWNER' || val === 'TENANT');
-      unitField.style.display     = isResident ? 'block' : 'none';
-      reasonSection.style.display = isResident ? 'block' : 'none';
+remarkSelect.addEventListener('change', function() {
+  const val = this.value.toUpperCase();
+  const isResident = (val === 'OWNER' || val === 'TENANT');
 
-      if (!isResident) {
-        reasonSelect.value        = '';
-        reasonSelect.style.color  = '#888888';
-        reasonSelect.style.fontWeight = 'bold';
-        reasonOther.style.display = 'none';
-        reasonOther.value         = '';
-        unitField.value           = '';
-      }
+  // OWNER / TENANT → show UNIT & REASON
+  unitField.style.display     = isResident ? 'block' : 'none';
+  reasonSection.style.display = isResident ? 'block' : 'none';
 
-      // OTHER CATEGORY
-      otherField.style.display = (val === 'OTHER') ? 'block' : 'none';
-      if (val !== 'OTHER') otherField.value = '';
-    });
+  unitField.required    = isResident;
+  reasonSelect.required = isResident;
 
-    // Reason dropdown - Other + Clone Card merah
-    reasonSelect.addEventListener('change', function() {
-      const val = this.value;
+  if (!isResident) {
+    unitField.value = "";
+    reasonSelect.value = "";
+    reasonSelect.style.color = '#888';
+    reasonOther.style.display = 'none';
+    reasonOther.required = false;
+    reasonOther.value = "";
+  }
 
-      // Other reason
-      if (val === 'Other') {
-        reasonOther.style.display = 'block';
-      } else {
-        reasonOther.style.display = 'none';
-        reasonOther.value         = '';
-      }
+  // CATEGORY = OTHER → show Other Category
+  const isOtherCat = (val === 'OTHER');
+  otherField.style.display = isOtherCat ? 'block' : 'none';
+  otherField.required = isOtherCat;
 
-      // Clone card merah
-      if (val.toUpperCase() === 'CLONE CARD') {
-        this.style.color      = 'red';
-        this.style.fontWeight = 'bold';
-      } else if (val === '') {
-        this.style.color      = '#888888';
-        this.style.fontWeight = 'bold';
-      } else {
-        this.style.color      = '#000';
-        this.style.fontWeight = 'bold';
-      }
-    });
+  if (!isOtherCat) {
+    otherField.value = "";
+    otherField.required = false;
+  }
+});
 
+// Reason dropdown - show Other Reason + Clone Card style
+reasonSelect.addEventListener('change', function() {
+  const val = this.value;
+
+  // Other Reason
+  if (val === 'Other') {
+    reasonOther.style.display = 'block';
+    reasonOther.required = true;
+  } else {
+    reasonOther.style.display = 'none';
+    reasonOther.value = '';
+    reasonOther.required = false;
+  }
+
+  // Clone card merah
+  if (val.toUpperCase() === 'CLONE CARD') {
+    this.style.color = 'red';
+    this.style.fontWeight = 'bold';
+  } else if (val === '') {
+    this.style.color = '#888888';
+    this.style.fontWeight = 'bold';
+  } else {
+    this.style.color = '#000';
+    this.style.fontWeight = 'bold';
+  }
+});
+    
     // === VALIDASI SUBMIT (WARNING) ===
     document.getElementById('registrationForm').addEventListener('submit', function(e) {
       const remark         = remarkSelect.value.toUpperCase();
