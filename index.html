@@ -516,9 +516,10 @@
     </select>
 
     <input type="text" id="unitNumber" name="unitNumber" placeholder="UNIT NUMBER" style="display:none; margin-top:10px;">
+    <input type="text" id="categoryOther" name="categoryOther" placeholder="PLEASE SPECIFY" style="display:none; margin-top:10px;" required> 
 
     <!-- Reason section (hidden by default) -->
-    <div id="reasonSection" style="display:none; margin-top:10px;">
+    <div id="reasonSection" style="display:none; margin-top:10px;" required>
       <label for="reasonSelect">REASON</label>
       <select id="reasonSelect" name="reasonSelect">
         <option value="" disabled selected>-PLEASE SELECT-</option>
@@ -531,10 +532,10 @@
         <option value="Clone card">Clone card</option>
         <option value="Other">Other</option>
       </select>
-      <input type="text" id="reasonOther" name="reasonOther" placeholder="PLEASE SPECIFY" style="display:none; margin-top:7px;">
+      <input type="text" id="reasonOther" name="reasonOther" placeholder="PLEASE SPECIFY" style="display:none; margin-top:7px;" required>
     </div>
 
-    <input type="text" id="otherCategory" name="otherCategory" placeholder="PLEASE SPECIFY" style="display:none; margin-top:10px;">
+    
 
     <label for="tower">TOWER</label>
     <select id="tower" name="tower" required>
