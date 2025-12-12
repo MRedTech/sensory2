@@ -1231,15 +1231,40 @@ reasonSelect.addEventListener('change', function() {
   // ambil gambar yang sudah di-crop ikut apa yang nampak dalam preview
   const croppedImage = getVisibleCroppedImageData();
 
-  const data = {
-    namePassport: document.getElementById('namePassport').value,
-    mykadPassport: document.getElementById('mykadPassport').value,
-    regnum: document.getElementById('regnum').value,
-    contact: document.getElementById('contact').value,
-    remark: document.getElementById('remark').value,
-    tower: document.getElementById('tower').value,
-    imageUrl: croppedImage   // <-- GUNA YANG DAH CROP
-  };
+  // --- Format data sebelum submit ---
+let remarkValue = document.getElementById('remark').value;
+let otherCategoryVal = document.getElementById('otherCategory').value.trim();
+let unitNumberVal = document.getElementById('unitNumber').value.trim();
+let reasonVal = document.getElementById('reasonSelect').value;
+let reasonOtherVal = document.getElementById('reasonOther').value.trim();
+
+// === FORMAT CATEGORY ===
+if (remarkValue === "OTHER" && otherCategoryVal) {
+  remarkValue = `OTHER ( ${otherCategoryVal} )`;
+} else if ((remarkValue === "OWNER" || remarkValue === "TENANT") && unitNumberVal) {
+  remarkValue = `${remarkValue} ( ${unitNumberVal} )`;
+}
+
+// === FORMAT REASON ===
+let reasonFinal = "";
+if ((remarkValue.includes("OWNER") || remarkValue.includes("TENANT")) && reasonVal) {
+  if (reasonVal === "Other" && reasonOtherVal) {
+    reasonFinal = `OTHER ( ${reasonOtherVal} )`;
+  } else {
+    reasonFinal = reasonVal.toUpperCase();
+  }
+}
+
+const data = {
+  namePassport: document.getElementById('namePassport').value,
+  mykadPassport: document.getElementById('mykadPassport').value,
+  regnum: document.getElementById('regnum').value,
+  contact: document.getElementById('contact').value,
+  remark: remarkValue,      // kategori siap format
+  reason: reasonFinal,      // sebab siap format
+  tower: document.getElementById('tower').value,
+  imageUrl: croppedImage    // gambar base64
+};
       
       try {
         const res      = await fetch(urlCloudflareWorker, {
