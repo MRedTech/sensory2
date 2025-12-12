@@ -606,41 +606,82 @@
       }
     }
 
-    // === MODE A: GRAYSCALE + CONTRAST ENHANCEMENT ===
-    function applyGrayscaleContrast(canvas) {
-      const ctx = canvas.getContext('2d');
-      const width = canvas.width;
-      const height = canvas.height;
-      const imageData = ctx.getImageData(0, 0, width, height);
-      const data = imageData.data;
+    // === MODE A: SMART GRAYSCALE + OCR ENHANCEMENT ===
+   function applyGrayscaleContrast(canvas) {
+     const ctx = canvas.getContext('2d');
+     const width = canvas.width;
+     const height = canvas.height;
 
-      let minL = 255;
-      let maxL = 0;
+     const imageData = ctx.getImageData(0, 0, width, height);
+     const data = imageData.data;
 
-      for (let i = 0; i < data.length; i += 4) {
-        const r   = data[i];
-        const g   = data[i + 1];
-        const b   = data[i + 2];
-        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+     const pixelCount = width * height;
+     const lum = new Float32Array(pixelCount);
 
-        if (lum < minL) minL = lum;
-        if (lum > maxL) maxL = lum;
+   // 1) Grayscale + cari min & max luminance
+     let minL = 255;
+     let maxL = 0;
 
-        data[i] = data[i + 1] = data[i + 2] = lum;
-      }
+     for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+     const r = data[i];
+     const g = data[i + 1];
+     const b = data[i + 2];
 
-      const range = Math.max(1, maxL - minL);
+     let L = 0.299 * r + 0.587 * g + 0.114 * b; // grayscale standard
+     lum[p] = L;
 
-      for (let i = 0; i < data.length; i += 4) {
-        let lum       = data[i];
-        let stretched = ((lum - minL) * 255) / range;
-        stretched     = Math.max(0, Math.min(255, stretched));
-        data[i] = data[i + 1] = data[i + 2] = stretched;
-      }
+     if (L < minL) minL = L;
+     if (L > maxL) maxL = L;
+   }
 
-      ctx.putImageData(imageData, 0, 0);
+     const range = Math.max(1, maxL - minL);
+
+   // 2) Global contrast stretch (0–255)
+    for (let p = 0; p < pixelCount; p++) {
+      let v = ((lum[p] - minL) * 255) / range;
+      v = Math.max(0, Math.min(255, v));
+      lum[p] = v;
+   }
+
+   // 3) Gamma tweak (lebih jelas tulisan gelap atas background cerah)
+    const gamma = 1.2; // boleh main antara 1.1 – 1.5
+    for (let p = 0; p < pixelCount; p++) {
+      let n = lum[p] / 255;
+      n = Math.pow(n, gamma);
+      lum[p] = Math.max(0, Math.min(255, n * 255));
     }
 
+   // 4) Sharpen ringkas (unsharp mask 1D – fokus garis horizontal teks)
+    const amount = 0.6; // kekuatan sharpen
+    const sharpened = new Uint8ClampedArray(pixelCount);
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const idx = y * width + x;
+
+      const center = lum[idx];
+      const left = lum[y * width + Math.max(0, x - 1)];
+      const right = lum[y * width + Math.min(width - 1, x + 1)];
+
+      // high-pass ringkas
+      const edge = center * 1.5 - 0.25 * (left + right);
+      let s = center + amount * edge;
+
+       s = Math.max(0, Math.min(255, s));
+       sharpened[idx] = s;
+     }
+   }
+
+     // 5) Tulis balik ke canvas sebagai grayscale
+     for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+       const v = sharpened[p];
+       data[i] = data[i + 1] = data[i + 2] = v; // R, G, B
+    // data[i + 3] kekalkan alpha sedia ada
+   }
+
+    ctx.putImageData(imageData, 0, 0);
+ }
+    
     // Capture image AI
     function captureImage() {
       if (!video) return;
