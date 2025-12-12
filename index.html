@@ -688,57 +688,78 @@
       })();
     }
 
-    // Fallback input file asal
-    document.getElementById('imageInput').addEventListener('change', function(event) {
-      const file = event.target.files[0];
-      if (!file) return;
+    // Fallback: gambar dari GALLERY (crop + grayscale)
+document.getElementById('imageInput').addEventListener('change', function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
 
-      const reader = new FileReader();
-      reader.onload = function() {
-        const img = new window.Image();
-        img.onload = async function() {
-          const canvas = document.createElement('canvas');
-          const scale  = Math.min(1, 800 / img.width);
-          canvas.width  = img.width  * scale;
-          canvas.height = img.height * scale;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  const reader = new FileReader();
+  reader.onload = function() {
+    const img = new window.Image();
+    img.onload = async function() {
 
-          applyGrayscaleContrast(canvas);
-          const compressed = canvas.toDataURL('image/jpeg', 0.85);
+      // 1. Resize maksimum lebar 800
+      const baseCanvas = document.createElement('canvas');
+      const scale      = Math.min(1, 800 / img.width);
+      baseCanvas.width  = img.width  * scale;
+      baseCanvas.height = img.height * scale;
+      const bctx = baseCanvas.getContext('2d');
+      bctx.drawImage(img, 0, 0, baseCanvas.width, baseCanvas.height);
 
-          const preview = document.getElementById('preview');
-          preview.src   = compressed;
-          document.getElementById('imageContainer').style.display = 'block';
+      // 2. CROP BAHAGIAN TENGAH (contoh: 60% tinggi)
+      const cropCanvas = document.createElement('canvas');
+      const cropW = baseCanvas.width;          // penuh lebar
+      const cropH = baseCanvas.height * 0.6;   // ambil 60% tengah
+      const cropX = 0;
+      const cropY = (baseCanvas.height - cropH) / 2;
 
-          try {
-            const proxyUrl = "https://sensory-vision2.edreborn86.workers.dev";
-            document.body.style.cursor = 'progress';
-            const res = await fetch(proxyUrl, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ image: compressed.split(",")[1] })
-            });
-            const result = await res.json();
-            document.body.style.cursor = 'default';
+      cropCanvas.width  = cropW;
+      cropCanvas.height = cropH;
+      const cctx = cropCanvas.getContext('2d');
+      cctx.drawImage(
+        baseCanvas,
+        cropX, cropY, cropW, cropH,
+        0, 0, cropW, cropH
+      );
 
-            if (result.name) {
-              const rawName   = result.name.toUpperCase().trim();
-              const cleanName = filterNonNameWords(rawName);
-              document.getElementById('namePassport').value = cleanName;
-            }
-            if (result.idnum) {
-              document.getElementById('mykadPassport').value = result.idnum.toUpperCase();
-            }
-          } catch (err) {
-            document.body.style.cursor = 'default';
-            alert("Autofill GAGAL: " + err.message);
-          }
-        };
-        img.src = reader.result;
-      };
-      reader.readAsDataURL(file);
-    });
+      // 3. Grayscale + contrast pada gambar yang sudah crop
+      applyGrayscaleContrast(cropCanvas);
+
+      // 4. Jadikan JPEG base64 & preview
+      const compressed = cropCanvas.toDataURL('image/jpeg', 0.85);
+      const preview    = document.getElementById('preview');
+      preview.src      = compressed;
+      document.getElementById('imageContainer').style.display = 'block';
+
+      // 5. Hantar ke Google Vision (guna versi cropped)
+      try {
+        const proxyUrl = "https://sensory-vision2.edreborn86.workers.dev";
+        document.body.style.cursor = 'progress';
+        const res = await fetch(proxyUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: compressed.split(",")[1] })
+        });
+        const result = await res.json();
+        document.body.style.cursor = 'default';
+
+        if (result.name) {
+          const rawName   = result.name.toUpperCase().trim();
+          const cleanName = filterNonNameWords(rawName);
+          document.getElementById('namePassport').value = cleanName;
+        }
+        if (result.idnum) {
+          document.getElementById('mykadPassport').value = result.idnum.toUpperCase();
+        }
+      } catch (err) {
+        document.body.style.cursor = 'default';
+        alert("Autofill GAGAL: " + err.message);
+      }
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+});
 
     // Butang CALL
     function updateCallLink() {
