@@ -761,6 +761,52 @@ document.getElementById('imageInput').addEventListener('change', function(event)
   reader.readAsDataURL(file);
 });
 
+  // === CROP GAMBAR MENGIKUT APA YANG NAMPAK DALAM PREVIEW ===
+  function getVisibleCroppedImageData() {
+    const img = document.getElementById('preview');
+    const container = document.getElementById('imageContainer');
+
+    if (!img || !img.src || img.src === "#" || !img.src.startsWith("data:image")) {
+      return img ? img.src : "";
+    }
+
+    const naturalWidth = img.naturalWidth;
+    const naturalHeight = img.naturalHeight;
+    const visibleWidth = container.clientWidth;
+    const visibleHeight = container.clientHeight;
+
+    if (!naturalWidth || !naturalHeight || !visibleWidth || !visibleHeight) {
+      return img.src;
+    }
+
+    // skala imej dalam container (width 100%)
+    const scale = visibleWidth / naturalWidth;
+    const scaledHeight = naturalHeight * scale;
+
+    // kalau tinggi imej <= tinggi container, tak perlu crop
+    let srcVisibleHeight;
+    if (scaledHeight <= visibleHeight + 1) {
+      srcVisibleHeight = naturalHeight;
+    } else {
+      // kalau lebih tinggi, ambil bahagian atas setinggi yang nampak dalam container
+      srcVisibleHeight = visibleHeight / scale;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = naturalWidth;
+    canvas.height = srcVisibleHeight;
+    const ctx = canvas.getContext('2d');
+
+    // crop dari atas (y = 0) sampai tinggi yang diperlukan
+    ctx.drawImage(
+      img,
+      0, 0, naturalWidth, srcVisibleHeight,
+      0, 0, naturalWidth, srcVisibleHeight
+    );
+
+    return canvas.toDataURL('image/jpeg', 0.9);
+  }
+
     // Butang CALL
     function updateCallLink() {
       const phone   = document.getElementById('contact').value.trim();
@@ -1154,20 +1200,10 @@ document.getElementById('imageInput').addEventListener('change', function(event)
 
     // Submit ke Worker
     document.getElementById("registrationForm").addEventListener("submit", async function(e){
-      e.preventDefault();
-      setSubmitBtnLoading(true);
+  e.preventDefault();
 
-        const previewSrc = document.getElementById('preview').src || "";
-  let imageUrl = "";
-  let imageBase64 = "";
-
-  if (previewSrc && previewSrc.startsWith("data:image")) {
-    imageUrl = previewSrc;                    // DataURL penuh (kalau perlu)
-    const parts = previewSrc.split(",");
-    if (parts.length === 2) {
-      imageBase64 = parts[1];                // PURE base64 untuk Apps Script
-    }
-  }
+  // ambil gambar yang sudah di-crop ikut apa yang nampak dalam preview
+  const croppedImage = getVisibleCroppedImageData();
 
   const data = {
     namePassport: document.getElementById('namePassport').value,
@@ -1175,14 +1211,10 @@ document.getElementById('imageInput').addEventListener('change', function(event)
     regnum: document.getElementById('regnum').value,
     contact: document.getElementById('contact').value,
     remark: document.getElementById('remark').value,
-    unitNumber: document.getElementById('unitNumber').value,
     tower: document.getElementById('tower').value,
-    reason: document.getElementById('reasonSelect') ? document.getElementById('reasonSelect').value : '',
-    reasonOther: document.getElementById('reasonOther') ? document.getElementById('reasonOther').value : '',
-    imageUrl,        // masih hantar (tak kacau flow lama)
-    imageBase64      // field baru yang kita guna di Apps Script
+    imageUrl: croppedImage   // <-- GUNA YANG DAH CROP
   };
-
+      
       try {
         const res      = await fetch(urlCloudflareWorker, {
           method: "POST",
