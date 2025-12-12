@@ -1201,6 +1201,8 @@ document.getElementById('imageInput').addEventListener('change', function(event)
     // Submit ke Worker
     document.getElementById("registrationForm").addEventListener("submit", async function(e){
   e.preventDefault();
+      
+    setSubmitBtnLoading(true);  
 
   // ambil gambar yang sudah di-crop ikut apa yang nampak dalam preview
   const croppedImage = getVisibleCroppedImageData();
