@@ -41,22 +41,20 @@
     font-size: 11px;
   }
   .header-gradient {
-    background: linear-gradient(145deg, #3bd97b 0%, #2b7a2b 100%);
+    background: linear-gradient(145deg, #54e087 0%, #2b7a2b 100%);
     font-weight: 900;
-    font-size: 1.8rem;
+    font-size: 2.2rem;
     letter-spacing: 1.5px;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     color: transparent;
 
-    /* 3D depth effect */
+    /* 3D shadow — no inner shadow */
     text-shadow:
-        0px 1px 0px rgba(255, 255, 255, 0.35),   /* top highlight */
-        0px 2px 2px rgba(0, 0, 0, 0.25),         /* soft base shadow */
-        0px 4px 4px rgba(0, 0, 0, 0.20),         /* deeper shadow */
-        0px 6px 6px rgba(0, 0, 0, 0.18),         /* strong depth */
-        0px 8px 10px rgba(0, 0, 0, 0.15);        /* long 3D drop shadow */
+        0px 4px 8px rgba(0, 0, 0, 0.18),   /* main 3D drop shadow */
+        0px 2px 2px rgba(0, 0, 0, 0.10),   /* secondary soft shadow */
+        0px 1px 1px rgba(255, 255, 255, 0.35); /* top highlight */
   }
   .swal2-confirm {
     background: linear-gradient(135deg, #2b7a2b 0%, #3bd97b 100%) !important;
