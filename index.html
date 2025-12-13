@@ -328,32 +328,28 @@
   @media (max-width: 500px) {
     .camera-container { max-width: 98vw; }
   }
-
-  .spinner {
-    display: inline-block;
-    width: 15px;
-    height: 15px;
-    border: 3px solid #fff;
-    border-radius: 50%;
-    border-top: 3px solid #176b39;
-    animation: spin 0.8s linear infinite;
-    vertical-align: middle;
-    margin-right: 8px;
-  }
-  @keyframes spin {
-    0%   { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
+  .spinner,
   .loader {
     display: inline-block;
-    width: 15px;
-    height: 15px;
-    border: 3px solid #fff;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
-    border-top: 3px solid #176b39;
-    animation: spin 0.8s linear infinite;
+    box-sizing: border-box;
+    /* ring putih + lutsinar macam loading Google */
+    border: 3px solid rgba(255, 255, 255, 0.25);
+    border-top-color: #ffffff;
+    border-right-color: #ffffff;
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+    border-left-color: rgba(255, 255, 255, 0.1);
+    animation: google-spin 0.8s linear infinite;
     vertical-align: middle;
     margin-right: 8px;
+  }
+
+  @keyframes google-spin {
+    0%   { transform: rotate(0deg); }
+    50%  { transform: rotate(180deg); }
+    100% { transform: rotate(360deg); }
   }
   </style>
 </head>
