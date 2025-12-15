@@ -1248,8 +1248,10 @@ reasonSelect.addEventListener('change', function() {
       
     setSubmitBtnLoading(true);  
 
-  // ambil gambar yang sudah di-crop ikut apa yang nampak dalam preview
-  const croppedImage = getVisibleCroppedImageData();
+  /*// ambil gambar yang sudah di-crop ikut apa yang nampak dalam preview
+  const croppedImage = getVisibleCroppedImageData();*/
+  // ambil gambar terus dari PREVIEW (dah siap crop ikut guideline)
+  const croppedImage = document.getElementById('preview').src || "";
 
   // --- Format data sebelum submit ---
 let remarkValue = document.getElementById('remark').value;
