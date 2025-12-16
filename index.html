@@ -501,6 +501,7 @@
     <select id="remark" name="remark" required>
       <option value="" disabled selected>-PLEASE SELECT-</option>
       <option value="DROP OFF/PICK UP">DROP OFF/PICK UP</option>
+      <option value="DHL">DHL</option>
       <option value="E-HAILING">E-HAILING</option>
       <option value="FLASH EXPRESS">FLASH EXPRESS</option>
       <option value="FOOD PANDA">FOOD PANDA</option>
@@ -815,26 +816,27 @@ document.getElementById('imageInput').addEventListener('change', function(event)
   }
 
   // === AUTO DETECT DEVICE & SET PREVIEW HEIGHT (A) ===
-  function adjustPreviewSize() {
-    const container = document.getElementById('imageContainer');
-    if (!container) return;
+function adjustPreviewSize() {
+  const container = document.getElementById('imageContainer');
+  if (!container) return;
 
-    const width = window.innerWidth || document.documentElement.clientWidth;
+  // Lebar sebenar container di skrin
+  const width =
+    container.clientWidth ||
+    window.innerWidth ||
+    document.documentElement.clientWidth;
 
-    if (width <= 480) {
-      // Phone
-      container.style.maxHeight = "220px";
-    } else if (width <= 1024) {
-      // Tablet
-      container.style.maxHeight = "320px";
-    } else {
-      // iPad / Desktop
-      container.style.maxHeight = "380px";
-    }
-  }
+  // Anggaran nisbah tinggi:lebar untuk kad (lebih kurang 0.65)
+  const targetRatio = 0.65;
+  const maxHeightPx = Math.round(width * targetRatio);
 
-  window.addEventListener('load', adjustPreviewSize);
-  window.addEventListener('resize', adjustPreviewSize);
+  // Set max-height ikut lebar (auto scale phone / tablet / iPad)
+  container.style.maxHeight = maxHeightPx + "px";
+}
+
+window.addEventListener('load', adjustPreviewSize);
+window.addEventListener('resize', adjustPreviewSize);
+  
 
     // Butang CALL
     function updateCallLink() {
