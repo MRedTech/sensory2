@@ -1093,12 +1093,12 @@ reasonSelect.addEventListener('change', function() {
     }
 
     async function handleUniversalSearch() {
-  const btn      = document.getElementById('searchButton');
-  const inputEl  = document.getElementById('searchUniversal');
-  const input    = inputEl.value.trim();
+  const btn     = document.getElementById('searchButton');
+  const inputEl = document.getElementById('searchUniversal');
+  const input   = inputEl.value.trim();
   if (!input) return;
 
-  // Simpan apa yang user taip untuk digunakan kalau "NOT FOUND"
+  // Simpan apa yang user taip untuk digunakan kalau NOT FOUND / RETAKE ID
   const originalInput = input;
 
   btn.disabled = true;
@@ -1109,12 +1109,14 @@ reasonSelect.addEventListener('change', function() {
   let valueNorm    = normalize(input);
 
   try {
+    // 1) CARI GUNA REG NUM
     let res = await searchRecord('regnum', valueNorm);
     if (res.exist) {
       found        = res.data;
       hasHyperlink = res.hasHyperlink ?? false;
     }
 
+    // 2) JIKA TAK JUMPA, CARI GUNA MYKAD / PASSPORT
     if (!found) {
       res = await searchRecord('mykadPassport', valueNorm);
       if (res.exist) {
@@ -1123,6 +1125,7 @@ reasonSelect.addEventListener('change', function() {
       }
     }
 
+    // 3) RECORD JUMPA TAPI TIADA HYPERLINK → EXPIRED → RETAKE ID
     if (found && !hasHyperlink) {
       Swal.fire({
         title: "PREVIOUS RECORD EXPIRED",
@@ -1138,6 +1141,19 @@ reasonSelect.addEventListener('change', function() {
         willOpen: (popup) => { popup.style.borderRadius = "14px"; }
       }).then((res) => {
         if (res.isConfirmed) {
+          // 🔹 BARU: AUTO ISI REG NUM DGN NILAI CARIAN
+          const regField = document.getElementById('regnum');
+          if (regField && !regField.value) {
+            regField.value = originalInput.toUpperCase();
+          }
+
+          const formEl = document.getElementById('registrationForm');
+          if (formEl) {
+            formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+          if (regField) regField.focus();
+
+          // Buka kamera seperti biasa
           openCamera();
         }
       });
@@ -1147,6 +1163,7 @@ reasonSelect.addEventListener('change', function() {
       return;
     }
 
+    // 4) RECORD JUMPA & ADA HYPERLINK → AUTOFILL
     if (found) {
       Swal.fire({
         title: 'RECORD FOUND',
@@ -1163,14 +1180,15 @@ reasonSelect.addEventListener('change', function() {
       }).then((res) => {
         if (res.isConfirmed) {
           autofillForm(found);
-          document
-            .getElementById('registrationForm')
-            .scrollIntoView({ behavior: 'smooth', block: 'center' });
+          const formEl = document.getElementById('registrationForm');
+          if (formEl) {
+            formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
         }
         inputEl.value = "";
       });
     } else {
-      // --- BAHAGIAN BARU: NOT FOUND → AUTO ISI REG NUM ---
+      // 5) NOT FOUND → AUTO ISI REG NUM & FOKUS FORM
       Swal.fire({
         title: 'NOT FOUND',
         text: 'No record found.',
@@ -1185,17 +1203,15 @@ reasonSelect.addEventListener('change', function() {
         inputEl.value = "";
 
         const regField = document.getElementById('regnum');
-        if (regField) {
-          // Kalau belum ada value, auto isi dengan apa yang user taip di SEARCH RECORD
-          if (!regField.value) {
-            regField.value = originalInput.toUpperCase();
-          }
-          // Scroll ke form & fokus pada REGISTRATION NUMBER
-          document
-            .getElementById('registrationForm')
-            .scrollIntoView({ behavior: 'smooth', block: 'center' });
-          regField.focus();
+        if (regField && !regField.value) {
+          regField.value = originalInput.toUpperCase();
         }
+
+        const formEl = document.getElementById('registrationForm');
+        if (formEl) {
+          formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        if (regField) regField.focus();
       });
     }
 
@@ -1210,7 +1226,7 @@ reasonSelect.addEventListener('change', function() {
     btn.disabled = false;
     btn.innerHTML = 'SEARCH';
   }
-    }
+        }
     
     function autofillForm(data) {
       if (data.namePassport)   document.getElementById('namePassport').value   = data.namePassport;
