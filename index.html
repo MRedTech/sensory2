@@ -1093,105 +1093,125 @@ reasonSelect.addEventListener('change', function() {
     }
 
     async function handleUniversalSearch() {
-      const btn   = document.getElementById('searchButton');
-      const input = document.getElementById('searchUniversal').value.trim();
-      if (!input) return;
+  const btn      = document.getElementById('searchButton');
+  const inputEl  = document.getElementById('searchUniversal');
+  const input    = inputEl.value.trim();
+  if (!input) return;
 
-      btn.disabled = true;
-      btn.innerHTML = '<span class="loader"></span> SEARCHING...';
+  // Simpan apa yang user taip untuk digunakan kalau "NOT FOUND"
+  const originalInput = input;
 
-      let found       = null;
-      let hasHyperlink = false;
-      let valueNorm   = normalize(input);
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> SEARCHING...';
 
-      try {
-        let res = await searchRecord('regnum', valueNorm);
-        if (res.exist) {
-          found        = res.data;
-          hasHyperlink = res.hasHyperlink ?? false;
-        }
+  let found        = null;
+  let hasHyperlink = false;
+  let valueNorm    = normalize(input);
 
-        if (!found) {
-          res = await searchRecord('mykadPassport', valueNorm);
-          if (res.exist) {
-            found        = res.data;
-            hasHyperlink = res.hasHyperlink ?? false;
-          }
-        }
+  try {
+    let res = await searchRecord('regnum', valueNorm);
+    if (res.exist) {
+      found        = res.data;
+      hasHyperlink = res.hasHyperlink ?? false;
+    }
 
-        if (found && !hasHyperlink) {
-          Swal.fire({
-            title: "PREVIOUS RECORD EXPIRED",
-            text: "Please retake id photo.",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonText: 'YES, RETAKE ID',
-            cancelButtonText: 'NO',
-            background: 'linear-gradient(135deg, #fff9c4, #ffeb3b, #fbc02d)',
-            color: '#176b39',
-            width: 300,
-            customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
-            willOpen: (popup) => { popup.style.borderRadius = "14px"; }
-          }).then((res) => {
-            if (res.isConfirmed) {
-              openCamera();
-            }
-          });
-
-          btn.disabled = false;
-          btn.innerHTML = 'SEARCH';
-          return;
-        }
-
-        if (found) {
-          Swal.fire({
-            title: 'RECORD FOUND',
-            text: 'Autofill this form with record details?',
-            icon: 'success',
-            showCancelButton: true,
-            confirmButtonText: 'YES, AUTOFILL',
-            cancelButtonText: 'NO',
-            background: 'linear-gradient(135deg,#e9f5e9,#fff,#d5ffe0)',
-            color: '#176B39',
-            width: 300,
-            customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
-            willOpen: popup => { popup.style.borderRadius = "14px"; }
-          }).then((res) => {
-            if (res.isConfirmed) {
-              autofillForm(found);
-              document.getElementById('registrationForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-            document.getElementById('searchUniversal').value = "";
-          });
-        } else {
-          Swal.fire({
-            title: 'NOT FOUND',
-            text: 'No record found.',
-            icon: 'warning',
-            confirmButtonText: 'OK',
-            background: 'linear-gradient(135deg,#e9f5e9,#fff,#d5ffe0)',
-            color: '#176B39',
-            width: 300,
-            customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
-            willOpen: popup => { popup.style.borderRadius = "14px"; }
-          }).then(() => {
-            document.getElementById('searchUniversal').value = "";
-          });
-        }
-
-      } catch (err) {
-        Swal.fire({
-          title: 'ERROR',
-          text: err.message || 'Search failed!',
-          icon: 'error',
-          confirmButtonText: 'OK'
-        });
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = 'SEARCH';
+    if (!found) {
+      res = await searchRecord('mykadPassport', valueNorm);
+      if (res.exist) {
+        found        = res.data;
+        hasHyperlink = res.hasHyperlink ?? false;
       }
     }
 
+    if (found && !hasHyperlink) {
+      Swal.fire({
+        title: "PREVIOUS RECORD EXPIRED",
+        text: "Please retake id photo.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: 'YES, RETAKE ID',
+        cancelButtonText: 'NO',
+        background: 'linear-gradient(135deg, #fff9c4, #ffeb3b, #fbc02d)',
+        color: '#176b39',
+        width: 300,
+        customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
+        willOpen: (popup) => { popup.style.borderRadius = "14px"; }
+      }).then((res) => {
+        if (res.isConfirmed) {
+          openCamera();
+        }
+      });
+
+      btn.disabled = false;
+      btn.innerHTML = 'SEARCH';
+      return;
+    }
+
+    if (found) {
+      Swal.fire({
+        title: 'RECORD FOUND',
+        text: 'Autofill this form with record details?',
+        icon: 'success',
+        showCancelButton: true,
+        confirmButtonText: 'YES, AUTOFILL',
+        cancelButtonText: 'NO',
+        background: 'linear-gradient(135deg,#e9f5e9,#fff,#d5ffe0)',
+        color: '#176B39',
+        width: 300,
+        customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
+        willOpen: popup => { popup.style.borderRadius = "14px"; }
+      }).then((res) => {
+        if (res.isConfirmed) {
+          autofillForm(found);
+          document
+            .getElementById('registrationForm')
+            .scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        inputEl.value = "";
+      });
+    } else {
+      // --- BAHAGIAN BARU: NOT FOUND → AUTO ISI REG NUM ---
+      Swal.fire({
+        title: 'NOT FOUND',
+        text: 'No record found.',
+        icon: 'warning',
+        confirmButtonText: 'OK',
+        background: 'linear-gradient(135deg,#e9f5e9,#fff,#d5ffe0)',
+        color: '#176B39',
+        width: 300,
+        customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
+        willOpen: popup => { popup.style.borderRadius = "14px"; }
+      }).then(() => {
+        inputEl.value = "";
+
+        const regField = document.getElementById('regnum');
+        if (regField) {
+          // Kalau belum ada value, auto isi dengan apa yang user taip di SEARCH RECORD
+          if (!regField.value) {
+            regField.value = originalInput.toUpperCase();
+          }
+          // Scroll ke form & fokus pada REGISTRATION NUMBER
+          document
+            .getElementById('registrationForm')
+            .scrollIntoView({ behavior: 'smooth', block: 'center' });
+          regField.focus();
+        }
+      });
+    }
+
+  } catch (err) {
+    Swal.fire({
+      title: 'ERROR',
+      text: err.message || 'Search failed!',
+      icon: 'error',
+      confirmButtonText: 'OK'
+    });
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'SEARCH';
+  }
+    }
+    
     function autofillForm(data) {
       if (data.namePassport)   document.getElementById('namePassport').value   = data.namePassport;
       if (data.mykadPassport)  document.getElementById('mykadPassport').value  = data.mykadPassport;
