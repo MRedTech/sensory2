@@ -1128,40 +1128,51 @@ reasonSelect.addEventListener('change', function() {
     }
 
     // 3) RECORD JUMPA TAPI TIADA HYPERLINK → EXPIRED → RETAKE ID
-    if (found && !hasHyperlink) {
-      Swal.fire({
-        title: "PREVIOUS RECORD EXPIRED",
-        text: "Please retake id photo.",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonText: 'YES, RETAKE ID',
-        cancelButtonText: 'NO',
-        background: 'linear-gradient(135deg, #fff9c4, #ffeb3b, #fbc02d)',
-        color: '#176b39',
-        width: 300,
-        customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
-        willOpen: (popup) => { popup.style.borderRadius = "14px"; }
-        }).then((res) => {
-  if (res.isConfirmed) {
+     if (found && !hasHyperlink) {
 
-    // BARU: AUTO ISI REG NUM DGN NILAI CARIAN
-    const regField = document.getElementById('regnum');
-    if (regField && !regField.value) {
-      regField.value = originalInput.toUpperCase();
+  const originalInput = input; // simpan input carian asal
+
+  Swal.fire({
+    title: "PREVIOUS RECORD EXPIRED",
+    text: "Please retake id photo.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "YES, RETAKE ID",
+    cancelButtonText: "NO",
+    background: "linear-gradient(135deg, #fff9c4, #ffeb3b, #fbc02d)",
+    color: "#176b39",
+    width: 300,
+    customClass: { popup: "shadow-2xl px-7 pt-7 pb-6" },
+    willOpen: (popup) => { popup.style.borderRadius = "14px"; }
+  }).then((result) => {
+    if (result.isConfirmed) {
+
+      // ✅ auto isi regnum dengan nilai carian (kalau kosong)
+      const regField = document.getElementById("regnum");
+      if (regField && !regField.value) {
+        regField.value = originalInput.toUpperCase();
+      }
+
+      // ✅ clear input SEARCH RECORD supaya tak stay kat atas
+      const searchBox = document.getElementById("searchUniversal");
+      if (searchBox) searchBox.value = "";
+
+      // scroll ke form (optional, tapi ok)
+      const formEl = document.getElementById("registrationForm");
+      if (formEl) formEl.scrollIntoView({ behavior: "smooth", block: "center" });
+
+      if (regField) regField.focus();
+
+      // buka kamera
+      openCamera();
     }
+  });
 
-    const formEl = document.getElementById('registrationForm');
-    if (formEl) {
-      formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-
-    if (regField) regField.focus();
-
-    // Buka kamera seperti biasa
-    openCamera();
-  }
-});
-      
+  btn.disabled = false;
+  btn.innerHTML = "SEARCH";
+  return;
+     }
+    
     // 4) RECORD JUMPA & ADA HYPERLINK → AUTOFILL
     if (found) {
       Swal.fire({
