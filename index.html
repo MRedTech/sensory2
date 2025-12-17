@@ -1141,30 +1141,27 @@ reasonSelect.addEventListener('change', function() {
         width: 300,
         customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
         willOpen: (popup) => { popup.style.borderRadius = "14px"; }
-      }).then((res) => {
-        if (res.isConfirmed) {
-          // 🔹 BARU: AUTO ISI REG NUM DGN NILAI CARIAN
-          const regField = document.getElementById('regnum');
-          if (regField && !regField.value) {
-            regField.value = originalInput.toUpperCase();
-          }
+        }).then((res) => {
+  if (res.isConfirmed) {
 
-          const formEl = document.getElementById('registrationForm');
-          if (formEl) {
-            formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-          if (regField) regField.focus();
-
-          // Buka kamera seperti biasa
-          openCamera();
-        }
-      });
-
-      btn.disabled = false;
-      btn.innerHTML = 'SEARCH';
-      return;
+    // BARU: AUTO ISI REG NUM DGN NILAI CARIAN
+    const regField = document.getElementById('regnum');
+    if (regField && !regField.value) {
+      regField.value = originalInput.toUpperCase();
     }
 
+    const formEl = document.getElementById('registrationForm');
+    if (formEl) {
+      formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    if (regField) regField.focus();
+
+    // Buka kamera seperti biasa
+    openCamera();
+  }
+});
+      
     // 4) RECORD JUMPA & ADA HYPERLINK → AUTOFILL
     if (found) {
       Swal.fire({
