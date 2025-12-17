@@ -1161,7 +1161,7 @@ reasonSelect.addEventListener('change', function() {
       const formEl = document.getElementById("registrationForm");
       if (formEl) formEl.scrollIntoView({ behavior: "smooth", block: "center" });
 
-      if (regField) regField.focus();
+      /*if (regField) regField.focus();*/
 
       // buka kamera
       openCamera();
@@ -1198,6 +1198,7 @@ reasonSelect.addEventListener('change', function() {
         inputEl.value = "";
       });
     } else {
+      
       // 5) NOT FOUND → AUTO ISI REG NUM & FOKUS FORM
       Swal.fire({
         title: 'NOT FOUND',
@@ -1221,7 +1222,7 @@ reasonSelect.addEventListener('change', function() {
         if (formEl) {
           formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-        if (regField) regField.focus();
+        /*if (regField) regField.focus();*/
       });
     }
 
