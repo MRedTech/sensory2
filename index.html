@@ -1319,7 +1319,7 @@ if (remarkValue === "OTHER" && otherCategoryVal) {
 
 // === FORMAT REASON ===
 let reasonFinal = "";
-if ((remarkValue.includes("OWNER") || remarkValue.includes("TENANT")) && reasonVal) {
+if ((remarkValue.includes("OWNER") || remarkValue.includes("TENANT") || remarkValue.includes("PEDESTRIAN B1")) && reasonVal) {
   if (reasonVal === "Other" && reasonOtherVal) {
     reasonFinal = `OTHER ( ${reasonOtherVal} )`;
   } else {
