@@ -872,7 +872,7 @@ reasonOther.required = false;
 
 remarkSelect.addEventListener('change', function() {
   const val = this.value.toUpperCase();
-  const isResident = (val === 'OWNER' || val === 'TENANT');
+  const isResident = (val === 'OWNER' || val === 'TENANT' || val === 'PEDESTRIAN B1');
 
   // OWNER / TENANT → show UNIT & REASON
   unitField.style.display     = isResident ? 'block' : 'none';
