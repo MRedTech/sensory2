@@ -240,17 +240,22 @@
     box-shadow: 0 2px 5px #bbb;
     transform: translateY(2px) scale(0.98);
   }
+   .footer {
+  text-align: center;
+  padding: 5px;
+  font-size: 10px;
+  color: #888888;
+  margin-top: 24px;
+  margin-bottom: 1px;
+  font-family: Arial, sans-serif;
+  font-weight: normal;
+  opacity: 0.85;
+}
 
-  .footer {
-    text-align: center;
-    padding: 5px;
-    font-size: 10px;
-    color: #888888;
-    margin-top: 24px;
-    margin-bottom: 1px;
-    font-family: Arial, sans-serif;
-    font-weight: bold;
-  }
+.footer .mred {
+  color: #c62828; /* merah MRed */
+  font-weight: bold;
+}
 
   /* === MODAL KAMERA === */
   .camera-modal {
@@ -557,7 +562,9 @@
     <button type="submit" class="btn-3d submit-3d" id="submitBtn">SUBMIT</button>
   </form>
 
-  <div class="footer">POWERED BY MRED TECH</div>
+  <div class="footer">
+  Powered by <span class="mred">MRed Tech</span>
+</div>
 
   <!-- === MODAL KAMERA UNTUK GUIDELINE === -->
   <div id="cameraModal" class="camera-modal" style="display:none;">
