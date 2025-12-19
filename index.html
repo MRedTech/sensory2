@@ -240,26 +240,27 @@
     box-shadow: 0 2px 5px #bbb;
     transform: translateY(2px) scale(0.98);
   }
-  .footer {
-  text-align: center;
-  padding: 5px;
-  font-size: 10px;
-  color: #888888;
-  margin-top: 24px;
-  margin-bottom: 1px;
-  font-family: Arial, sans-serif;
-  font-weight: normal;
-  opacity: 0.85;
+    .footer{
+  text-align:center;
+  padding:6px 0;
+  margin-top:22px;
+  margin-bottom:6px;
+  font-family: "Arial", "Helvetica", sans-serif;
+  font-style: italic;      
+  font-weight: 600;           
+  letter-spacing: .2px;
+  color: #8a8a8a;
+  opacity: .85;
+
+  /* auto besar-kecil ikut skrin */
+  font-size: clamp(10px, 2.4vw, 13px);
 }
 
-.footer .mred {
-  color: #c62828;
-  font-weight: bold;
+.footer .mred{
+  color:#c62828;      
+  font-weight: 800;
 }
-.footer {
-  letter-spacing: 0.4px;
-}
-
+  
   /* === MODAL KAMERA === */
   .camera-modal {
     position: fixed;
