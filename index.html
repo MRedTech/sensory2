@@ -1085,6 +1085,12 @@ reasonSelect.addEventListener('change', function() {
     // ---- UNIVERSAL SEARCH ----
     const WORKER_URL = "https://ext-gs12.edreborn86.workers.dev";
 
+    // === STANDARD FIELD NAME (API CONTRACT) ===
+const FIELD = {
+  REG: "REGNUM",
+  ID: "MYKADPASSPORT"
+};
+    
     function normalize(str) {
       return (str || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
     }
@@ -1113,7 +1119,7 @@ reasonSelect.addEventListener('change', function() {
 
   try {
     // 1) CARI GUNA REG NUM
-    let res = await searchRecord('regnum', valueNorm);
+    let res = await searchRecord(FIELD.REG, valueNorm);
     if (res.exist) {
       found        = res.data;
       hasHyperlink = res.hasHyperlink ?? false;
@@ -1121,7 +1127,7 @@ reasonSelect.addEventListener('change', function() {
 
     // 2) JIKA TAK JUMPA, CARI GUNA MYKAD / PASSPORT
     if (!found) {
-      res = await searchRecord('mykadPassport', valueNorm);
+      res = await searchRecord(FIELD.ID, valueNorm);
       if (res.exist) {
         found        = res.data;
         hasHyperlink = res.hasHyperlink ?? false;
