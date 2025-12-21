@@ -568,6 +568,7 @@
     <button class="capture-btn-3d" type="button" onclick="captureImage()"></button>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script>
     // --- MODAL CAMERA + GUIDELINE & AUTO-CROP ---
     let stream = null;
@@ -938,7 +939,8 @@ reasonSelect.addEventListener('change', function() {
       // OTHER -> wajib isi OTHER CATEGORY
       if (remark === 'OTHER' && other === '') {
         e.preventDefault();
-        Swal.fire({
+        e.stopImmediatePropagation();
+        safeSwalFire({
           title: 'MISSING INFORMATION',
           text: 'Please specify OTHER CATEGORY.',
           icon: 'warning',
@@ -950,7 +952,8 @@ reasonSelect.addEventListener('change', function() {
       // OWNER/TENANT -> wajib unit number
       if ((remark === 'OWNER' || remark === 'TENANT') && unit === '') {
         e.preventDefault();
-        Swal.fire({
+        e.stopImmediatePropagation();
+        safeSwalFire({
           title: 'MISSING INFORMATION',
           text: 'Please enter UNIT NUMBER.',
           icon: 'warning',
@@ -962,7 +965,8 @@ reasonSelect.addEventListener('change', function() {
       // OWNER/TENANT -> wajib pilih reason
       if ((remark === 'OWNER' || remark === 'TENANT') && reason === '') {
         e.preventDefault();
-        Swal.fire({
+        e.stopImmediatePropagation();
+        safeSwalFire({
           title: 'MISSING INFORMATION',
           text: 'Please select REASON.',
           icon: 'warning',
@@ -974,7 +978,8 @@ reasonSelect.addEventListener('change', function() {
       // OWNER/TENANT + REASON = Other -> wajib isi other reason
       if ((remark === 'OWNER' || remark === 'TENANT') && reason === 'Other' && reasonOtherVal === '') {
         e.preventDefault();
-        Swal.fire({
+        e.stopImmediatePropagation();
+        safeSwalFire({
           title: 'MISSING INFORMATION',
           text: 'Please specify OTHER REASON.',
           icon: 'warning',
@@ -1049,6 +1054,13 @@ reasonSelect.addEventListener('change', function() {
         btn.disabled = false;
         btn.innerHTML = `SUBMIT`;
       }
+    }
+    
+    // ---- SAFE SWAL (fallback) ----
+    function safeSwalFire(options) {
+      if (typeof Swal !== "undefined") return Swal.fire(options);
+      alert((options.title || "NOTICE") + "\n\n" + (options.text || ""));
+      return Promise.resolve({ isConfirmed: true });
     }
 
     // ==== AI Smart OCR Verification helper ====
@@ -1342,14 +1354,21 @@ const data = {
   tower: document.getElementById('tower').value,
   imageUrl: croppedImage    // gambar base64
 };
+
+      const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s
       
       try {
-        const res      = await fetch(urlCloudflareWorker, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data)
+        const res = await fetch(urlCloudflareWorker, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(data),
+  signal: controller.signal
+});
         });
         const respData = await res.json();
+        clearTimeout(timeoutId);
+    
         setSubmitBtnLoading(false);
 
         if (respData.success) {
@@ -1387,6 +1406,7 @@ const data = {
           });
         }
       } catch (err) {
+        clearTimeout(timeoutId);
         setSubmitBtnLoading(false);
         Swal.fire({
           title: 'ERROR!',
@@ -1397,8 +1417,7 @@ const data = {
       }
     });
   </script>
-
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
   <script>
     function pad(n){return n<10?'0'+n:n;}
     function updateDateTime() {
