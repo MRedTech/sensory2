@@ -1286,7 +1286,7 @@ const FIELD = {
     document.getElementById('mykadPassport').addEventListener('blur', async function() {
       const value = this.value.trim();
       if (value.length < 6) return;
-      const result = await searchRecord(FIELD.ID, valueNorm);
+      const result = await searchRecord(FIELD.ID, normalize(value));
       if (result.exist) {
         safeSwalFire({
           title: 'PREVIOUS DATA FOUND',
