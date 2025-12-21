@@ -48,12 +48,6 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
     color: transparent;
-
-    /* 3D shadow — no inner shadow */
-    /*text-shadow:
-        0px 4px 8px rgba(0, 0, 0, 0.18),   /* main 3D drop shadow */
-        /*0px 2px 2px rgba(0, 0, 0, 0.10),   /* secondary soft shadow */
-        /*0px 1px 1px rgba(255, 255, 255, 0.35); /* top highlight */
   }
   .swal2-confirm {
     background: linear-gradient(135deg, #2b7a2b 0%, #3bd97b 100%) !important;
@@ -996,7 +990,6 @@ reasonSelect.addEventListener('change', function() {
       if (raw.length > 1 && raw[1] !== '-') {
         raw = raw[0] + '-' + raw.slice(1);
       }
-
       let val = raw.replace(/-/g, '');
 
       let mG = val.match(/^([A-Z])G(\d{1,2}[A-Z]?)(\d{0,2}[A-Z]?)$/);
@@ -1006,40 +999,33 @@ reasonSelect.addEventListener('change', function() {
         this.value = out;
         return;
       }
-
       if (val.length > 4 && val[3] === "A" && val[4] !== "-") {
         this.value = raw.slice(0, 5) + "-" + raw.slice(5);
         return;
       }
-
       let mStd = val.match(/^([A-Z])(\d{2})(\d{1,2}[A-Z]?)$/);
       if (mStd) {
         this.value = mStd[1] + '-' + mStd[2] + '-' + mStd[3];
         return;
       }
-
       let mShort = val.match(/^([A-Z])(\d{2}[A-Z])$/);
       if (mShort) {
         this.value = mShort[1] + '-' + mShort[2];
         return;
       }
-
       let m1 = val.match(/^([A-Z])(\d)$/);
       if (m1) {
         this.value = m1[1] + '-' + m1[2];
         return;
       }
-
       let mAG = val.match(/^([A-Z])G$/);
       if (mAG) {
         this.value = mAG[1] + '-G';
         return;
       }
-
       if (/^[A-Z](-[G]?)?(-?\d{1,2}[A-Z]?)*(-\d{1,2}[A-Z]?)?$/.test(this.value)) {
         return;
       }
-
       this.value = val.replace(/^([A-Z])G/, "$1-G");
     });
 
@@ -1098,10 +1084,10 @@ reasonSelect.addEventListener('change', function() {
     const WORKER_URL = "https://ext-gs12.edreborn86.workers.dev";
 
     // === STANDARD FIELD NAME (API CONTRACT) ===
-const FIELD = {
-  REG: "REGNUM",
-  ID: "MYKADPASSPORT"
-};
+    const FIELD = {
+     REG: "REGNUM",
+     ID: "MYKADPASSPORT"
+  };
     
     function normalize(str) {
       return (str || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -1114,10 +1100,10 @@ const FIELD = {
     }
 
     async function handleUniversalSearch() {
-  const btn     = document.getElementById('searchButton');
-  const inputEl = document.getElementById('searchUniversal');
-  const input   = inputEl.value.trim();
-  if (!input) return;
+      const btn     = document.getElementById('searchButton');
+      const inputEl = document.getElementById('searchUniversal');
+      const input   = inputEl.value.trim();
+      if (!input) return;
 
   // Simpan apa yang user taip untuk digunakan kalau NOT FOUND / RETAKE ID
   const originalInput = input;
@@ -1258,7 +1244,7 @@ const FIELD = {
     btn.disabled = false;
     btn.innerHTML = 'SEARCH';
   }
-        }
+}
     
     function autofillForm(data) {
       if (data.namePassport)   document.getElementById('namePassport').value   = data.namePassport;
