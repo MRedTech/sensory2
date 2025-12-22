@@ -1103,12 +1103,10 @@ reasonSelect.addEventListener('change', function() {
   if (digitsOnly.length === 12) return FIELD.ID;
   if (/^\d{6}-\d{2}-\d{4}$/.test(s)) return FIELD.ID;
 
-  // 2) ✅ Passport: huruf depan + digit sahaja (tiada huruf di hujung)
-  // Contoh: EJ4087730, A1234567, AB12345678
+  // 2) Passport: huruf depan + digit sahaja
   if (/^[A-Z]{1,3}\d{5,}$/.test(alnumOnly)) return FIELD.ID;
 
-  // 3) Reg num Malaysia: biasa ada 1-3 huruf + digit,
-  // dan kadang ada huruf belakang (W1234A, VEP, dll)
+  // 3) Reg num Malaysia: biasa ada 1-3 huruf + digit
   if (/^[A-Z]{1,3}\d/.test(alnumOnly)) return FIELD.REG;
 
   // Default → fallback universal
@@ -1187,7 +1185,7 @@ reasonSelect.addEventListener('change', function() {
         showCancelButton: true,
         confirmButtonText: 'YES, RETAKE ID',
         cancelButtonText: 'NO',
-        background: 'linear-gradient(135deg,#e9f5e9,#fff,#d5ffe0)',
+        background: linear-gradient(135deg, #fff9c4, #ffeb3b, #fbc02d),
         color: '#176B39',
         width: 300,
         customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
@@ -1262,8 +1260,8 @@ reasonSelect.addEventListener('change', function() {
       text: 'Please proceed to register',
       icon: 'warning',
       confirmButtonText: 'OK',
-      background: 'linear-gradient(135deg,#e9f5e9,#fff,#d5ffe0)',
-      color: '#176B39',
+      background: linear-gradient(135deg, #e3f2fd, #ffffff, #bbdefb),
+      color: '#0d47a1',
       width: 300,
       customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
       willOpen: popup => { popup.style.borderRadius = "14px"; }
