@@ -1096,24 +1096,25 @@ reasonSelect.addEventListener('change', function() {
     function detectSearchField(raw) {
   const s = (raw || "").trim().toUpperCase();
 
-  // buang simbol untuk check digit
   const digitsOnly = s.replace(/[^0-9]/g, "");
   const alnumOnly  = s.replace(/[^A-Z0-9]/g, "");
 
-  // 1) MyKad: 12 digit (860923496973) atau format dash (860923-49-6973)
+  // 1) MyKad: 12 digit atau format dash
   if (digitsOnly.length === 12) return FIELD.ID;
   if (/^\d{6}-\d{2}-\d{4}$/.test(s)) return FIELD.ID;
 
-  // 2) Reg num Malaysia biasanya mula huruf 
+  // 2) Reg num Malaysia biasa (1–3 huruf + digit)
   if (/^[A-Z]{1,3}\d/.test(alnumOnly)) return FIELD.REG;
 
-  // 3) Kalau ada huruf tapi bukan gaya plate (passport foreign) → treat as ID
-  if (/[A-Z]/.test(alnumOnly) && digitsOnly.length < 12) return FIELD.ID;
+  // 3) 🔥 Huruf + digit lebih 4 → PASSPORT
+  if (/^[A-Z]+/.test(alnumOnly) && digitsOnly.length > 4) {
+    return FIELD.ID;
+  }
 
-  // Default: tak pasti → guna universal fallback
+  // Default → fallback universal
   return "";
     }
-    
+
     async function searchRecord(field, value) {
       const url = `${WORKER_URL}?field=${encodeURIComponent(field)}&value=${encodeURIComponent(value)}`;
       const res = await fetch(url);
@@ -1299,8 +1300,6 @@ reasonSelect.addEventListener('change', function() {
     btn.innerHTML = 'SEARCH';
   }
     }
-
-     
     
     function autofillForm(data) {
       if (data.namePassport)   document.getElementById('namePassport').value   = data.namePassport;
