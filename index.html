@@ -1120,137 +1120,187 @@ reasonSelect.addEventListener('change', function() {
       return await res.json();
     }
 
-     async function handleUniversalSearch() {
-  const btn     = document.getElementById('searchButton');
+    async function handleUniversalSearch() {
+  const btn = document.getElementById('searchButton');
   const inputEl = document.getElementById('searchUniversal');
-  const input   = (inputEl?.value || "").trim();
+
+  const input = (inputEl?.value || '').trim();
   if (!input) return;
 
-  const originalInput = input;           // simpan input asal
-  const valueNorm = normalize(input);    // untuk query API (uppercase + buang simbol)
-  const detectedField = detectSearchField(input);
+  // simpan input asal untuk auto-isi regnum kalau NOT FOUND / EXPIRED
+  const originalInput = input;
 
-  let found = null;
-  let hasHyperlink = false;
+  // normalized untuk query (uppercase + buang simbol)
+  const valueNorm = normalize(input);
+
+  // detect field supaya kalau jelas → 1 call sahaja (boost speed)
+  const detectedField = detectSearchField(input);
 
   btn.disabled = true;
   btn.innerHTML = '<span class="loader"></span> SEARCHING...';
 
   try {
-    let res = null;
+    let found = null;
+    let hasHyperlink = false;
+    let res;
 
-    // ✅ Jika boleh detect: buat 1 carian sahaja (lagi laju)
+    // =========================
+    // 1) Jika jelas REGNUM / ID → 1 carian sahaja
+    // =========================
     if (detectedField) {
       res = await searchRecord(detectedField, valueNorm);
+
       if (res && res.exist) {
         found = res.data || null;
-        hasHyperlink = !!res.hasHyperlink;
+        hasHyperlink = res.hasHyperlink ?? false;
       }
-    } 
-    // ✅ Fallback universal: reg dulu, baru id
-    else {
+    }
+
+    // =========================
+    // 2) Kalau tak pasti → fallback universal (REG dulu, then ID)
+    // =========================
+    if (!found && !detectedField) {
       res = await searchRecord(FIELD.REG, valueNorm);
       if (res && res.exist) {
         found = res.data || null;
-        hasHyperlink = !!res.hasHyperlink;
+        hasHyperlink = res.hasHyperlink ?? false;
       }
 
       if (!found) {
         res = await searchRecord(FIELD.ID, valueNorm);
         if (res && res.exist) {
           found = res.data || null;
-          hasHyperlink = !!res.hasHyperlink;
+          hasHyperlink = res.hasHyperlink ?? false;
         }
       }
     }
 
-    // 1) RECORD JUMPA tapi TIADA hyperlink → EXPIRED
+    // =========================
+    // 3) FOUND tapi tiada hyperlink = EXPIRED → retake ID
+    // =========================
     if (found && !hasHyperlink) {
-      const result = await Swal.fire({
-        title: "PREVIOUS RECORD EXPIRED",
-        text: "Please retake id photo.",
-        icon: "warning",
+      safeSwalFire({
+        title: 'PREVIOUS RECORD EXPIRED',
+        text: 'Please retake id photo',
+        icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: "YES, RETAKE ID",
-        cancelButtonText: "NO",
-        background: "linear-gradient(135deg, #fff9c4, #ffeb3b, #fbc02d)",
-        color: "#176b39",
+        confirmButtonText: 'YES, RETAKE ID',
+        cancelButtonText: 'NO',
+        background: 'linear-gradient(135deg,#e9f5e9,#fff,#d5ffe0)',
+        color: '#176B39',
         width: 300,
-        customClass: { popup: "shadow-2xl px-7 pt-7 pb-6" },
-        willOpen: (popup) => { popup.style.borderRadius = "14px"; }
+        customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
+        willOpen: popup => { popup.style.borderRadius = "14px"; }
+      }).then((r) => {
+        // clear input search
+        inputEl.value = "";
+
+        if (r.isConfirmed) {
+          // auto isi regnum dalam form jika kosong
+          const regField = document.getElementById('regnum');
+          if (regField && !regField.value) {
+            regField.value = originalInput.toUpperCase();
+          }
+
+          // scroll ke form
+          const formEl = document.getElementById('registrationForm');
+          if (formEl) {
+            formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+
+          // buka kamera selepas OK
+          openCamera();
+        }
       });
 
-      if (result.isConfirmed) {
-        // isi regnum dalam form kalau kosong
-        const regField = document.getElementById("regnum");
-        if (regField && !regField.value) regField.value = originalInput.toUpperCase();
-
-        // buka kamera
-        openCamera();
-      }
-      return; 
-    }
-
-    // 2) RECORD JUMPA & ADA hyperlink → autofill
-    if (found) {
-      await Swal.fire({
-        title: "RECORD FOUND",
-        text: "Autofill this form with record details.",
-        icon: "success",
-        confirmButtonText: "OK",
-        background: "linear-gradient(135deg, #e8f5e9, #c8e6c9, #a5d6a7)",
-        color: "#176b39",
-        width: 300,
-        customClass: { popup: "shadow-2xl px-7 pt-7 pb-6" },
-        willOpen: (popup) => { popup.style.borderRadius = "14px"; }
-      });
-
-      // ✅ function autofill ikut sistem awak (guna yang sedia ada)
-      // contoh:
-      // fillFormFromRecord(found);
-      // showPhotoPreview(found.photoLink);
-
-      if (typeof fillFormFromRecord === "function") {
-        fillFormFromRecord(found);
-      }
-      if (typeof showRecordPhoto === "function") {
-        showRecordPhoto(found.photoLink || "");
-      }
       return;
     }
 
-    // 3) NO RECORD FOUND → proceed register
-    const result = await Swal.fire({
-      title: "NO RECORD FOUND",
-      text: "Proceed to register?",
-      icon: "info",
-      confirmButtonText: "OK",
-      background: "linear-gradient(135deg, #e3f2fd, #bbdefb, #90caf9)",
-      color: "#176b39",
-      width: 300,
-      customClass: { popup: "shadow-2xl px-7 pt-7 pb-6" },
-      willOpen: (popup) => { popup.style.borderRadius = "14px"; }
-    });
+    // =========================
+    // 4) FOUND + hyperlink → tanya nak autofill
+    // =========================
+    if (found) {
+      safeSwalFire({
+        title: 'RECORD FOUND',
+        text: 'Autofill this form with record details?',
+        icon: 'success',
+        showCancelButton: true,
+        confirmButtonText: 'YES, AUTOFILL',
+        cancelButtonText: 'NO',
+        background: 'linear-gradient(135deg,#e9f5e9,#fff,#d5ffe0)',
+        color: '#176B39',
+        width: 300,
+        customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
+        willOpen: popup => { popup.style.borderRadius = "14px"; }
+      }).then((r) => {
+        if (r.isConfirmed) {
+          try {
+            autofillForm(found);
+          } catch (e) {
+            console.error("autofillForm error:", e);
+          }
 
-    if (result.isConfirmed) {
-      const regField = document.getElementById("regnum");
-      if (regField && !regField.value) regField.value = originalInput.toUpperCase();
+          const formEl = document.getElementById('registrationForm');
+          if (formEl) {
+            formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
 
-      openCamera(); // buka kamera lepas OK
+        // clear input search
+        inputEl.value = "";
+      });
+
+      return;
     }
+
+    // =========================
+    // 5) NOT FOUND → proceed register + auto isi regnum + open camera
+    // =========================
+    safeSwalFire({
+      title: 'NO PREVIOUS RECORD',
+      text: 'Please proceed to register',
+      icon: 'warning',
+      confirmButtonText: 'OK',
+      background: 'linear-gradient(135deg,#e9f5e9,#fff,#d5ffe0)',
+      color: '#176B39',
+      width: 300,
+      customClass: { popup: 'shadow-2xl px-7 pt-7 pb-6' },
+      willOpen: popup => { popup.style.borderRadius = "14px"; }
+    }).then(() => {
+      // clear input search
+      inputEl.value = "";
+
+      // auto isi regnum dalam form jika kosong
+      const regField = document.getElementById('regnum');
+      if (regField && !regField.value) {
+        regField.value = originalInput.toUpperCase();
+      }
+
+      // scroll ke form
+      const formEl = document.getElementById('registrationForm');
+      if (formEl) {
+        formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
+      // buka kamera
+      openCamera();
+    });
 
   } catch (err) {
     console.error(err);
-    Swal.fire({
-      title: "ERROR",
-      text: err?.message || "Something went wrong.",
-      icon: "error"
+    safeSwalFire({
+      title: 'ERROR',
+      text: err?.message || 'Search failed!',
+      icon: 'error',
+      confirmButtonText: 'OK'
     });
   } finally {
     btn.disabled = false;
-    btn.innerHTML = "SEARCH";
+    btn.innerHTML = 'SEARCH';
   }
-     }
+    }
+
+     
     
     function autofillForm(data) {
       if (data.namePassport)   document.getElementById('namePassport').value   = data.namePassport;
