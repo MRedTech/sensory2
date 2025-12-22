@@ -1093,6 +1093,28 @@ reasonSelect.addEventListener('change', function() {
       return (str || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
     }
 
+    function detectSearchField(raw) {
+  const s = (raw || "").trim().toUpperCase();
+
+  // buang simbol untuk check digit
+  const digitsOnly = s.replace(/[^0-9]/g, "");
+  const alnumOnly  = s.replace(/[^A-Z0-9]/g, "");
+
+  // 1) MyKad: 12 digit (860923496973) atau format dash (860923-49-6973)
+  if (digitsOnly.length === 12) return FIELD.ID;
+  if (/^\d{6}-\d{2}-\d{4}$/.test(s)) return FIELD.ID;
+
+  // 2) Reg num Malaysia biasanya mula huruf (W, V, B, ABC1234...)
+  // kalau mula 1-3 huruf dan diikuti digit → treat as REGNUM
+  if (/^[A-Z]{1,3}\d/.test(alnumOnly)) return FIELD.REG;
+
+  // 3) Kalau ada huruf tapi bukan gaya plate (passport foreign) → treat as ID
+  if (/[A-Z]/.test(alnumOnly) && digitsOnly.length < 12) return FIELD.ID;
+
+  // Default: tak pasti → guna universal fallback
+  return "";
+    }
+    
     async function searchRecord(field, value) {
       const url = `${WORKER_URL}?field=${encodeURIComponent(field)}&value=${encodeURIComponent(value)}`;
       const res = await fetch(url);
@@ -1115,23 +1137,35 @@ reasonSelect.addEventListener('change', function() {
   let hasHyperlink = false;
   let valueNorm    = normalize(input);
 
-  try {
-    // 1) CARI GUNA REG NUM
-    let res = await searchRecord(FIELD.REG, valueNorm);
+  const detectedField = detectSearchField(input);
+
+let res;
+
+// ✅ Jika jelas REGNUM atau MYKAD/PASSPORT → buat 1 carian sahaja
+if (detectedField) {
+  res = await searchRecord(detectedField, valueNorm);
+  if (res.exist) {
+    found = res.data;
+    hasHyperlink = res.hasHyperlink ?? false;
+  }
+} 
+// ✅ Jika tak pasti → fallback universal (reg dulu, then id)
+else {
+  res = await searchRecord(FIELD.REG, valueNorm);
+  if (res.exist) {
+    found = res.data;
+    hasHyperlink = res.hasHyperlink ?? false;
+  }
+
+  if (!found) {
+    res = await searchRecord(FIELD.ID, valueNorm);
     if (res.exist) {
-      found        = res.data;
+      found = res.data;
       hasHyperlink = res.hasHyperlink ?? false;
     }
-
-    // 2) JIKA TAK JUMPA, CARI GUNA MYKAD / PASSPORT
-    if (!found) {
-      res = await searchRecord(FIELD.ID, valueNorm);
-      if (res.exist) {
-        found        = res.data;
-        hasHyperlink = res.hasHyperlink ?? false;
-      }
-    }
-
+  }
+}
+      
     // 3) RECORD JUMPA TAPI TIADA HYPERLINK → EXPIRED → RETAKE ID
      if (found && !hasHyperlink) {
 
