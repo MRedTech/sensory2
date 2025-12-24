@@ -636,13 +636,33 @@ let autoSnapDone = false;
 let sharpStable = 0;
 
 let _prevFrameGray = null;
+let _roi = null;
 
 function analyzeFrame(video) {
   const w = 160, h = 120;
   const c = document.createElement("canvas");
   c.width = w; c.height = h;
   const ctx = c.getContext("2d", { willReadFrequently: true });
-  ctx.drawImage(video, 0, 0, w, h);
+
+  const vw = video.videoWidth || 0;
+  const vh = video.videoHeight || 0;
+
+  // kalau video belum ready, return nilai "fail"
+  if (!vw || !vh) {
+    return { sharpness: 0, edgeDensity: 0, motion: 999, gray: new Uint8ClampedArray(w*h), w, h };
+  }
+
+  // crop ikut ROI guideline (kalau ada)
+  if (_roi) {
+    const sx = Math.max(0, Math.floor(vw * _roi.rx));
+    const sy = Math.max(0, Math.floor(vh * _roi.ry));
+    const sw = Math.max(1, Math.floor(vw * _roi.rw));
+    const sh = Math.max(1, Math.floor(vh * _roi.rh));
+    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, w, h);
+  } else {
+    // fallback: full frame
+    ctx.drawImage(video, 0, 0, w, h);
+  }
 
   const data = ctx.getImageData(0, 0, w, h).data;
 
@@ -693,7 +713,7 @@ function analyzeFrame(video) {
     // hasTextLike
   function hasTextLike(gray, w, h) {
   let dark = 0, total = 0;
-  const T = 120; // boleh tune 120–140
+  const T = 130; 
 
   for (let y = 0; y < h; y += 2) {
     for (let x = 0; x < w; x += 2) {
@@ -706,7 +726,7 @@ function analyzeFrame(video) {
   const ratio = dark / total;
 
   // mesti ada "ink" sederhana → text
-  return ratio >= 0.06 && ratio <= 0.35;
+  return ratio >= 0.045 && ratio <= 0.45;
   }
     
     function startFocusAutoSnap() {
@@ -723,10 +743,30 @@ function analyzeFrame(video) {
     guideline.classList.remove("focus-google");
     guideline.classList.add("focus-wait");
   }
+ 
+  // --- ROI ikut guideline (supaya background noisy tak ganggu) ---
+try {
+  const container = document.querySelector(".camera-container");
+  if (container && guideline) {
+    const gr = guideline.getBoundingClientRect();
+    const cr = container.getBoundingClientRect();
+
+    _roi = {
+      rx: (gr.left - cr.left) / cr.width,
+      ry: (gr.top - cr.top) / cr.height,
+      rw: gr.width / cr.width,
+      rh: gr.height / cr.height
+    };
+  } else {
+    _roi = null;
+  }
+} catch (e) {
+  _roi = null;
+}
 
   // ===== SETTINGS (lebih ketat, tak snap kalau tiada ID) =====
-  const MIN_WAIT_MS  = 450;   // tunggu kamera stabil dulu
-  const SHARP_THRESH = 240;   // ketajaman minimum
+  const MIN_WAIT_MS  = 600;   // tunggu kamera stabil dulu
+  const SHARP_THRESH = 260;   // ketajaman minimum
   const EDGE_MIN     = 0.055; // mesti ada text/garis (ID)
   const MOTION_MAX   = 7.5;   // mesti stabil (kurang gegar)
   const NEED_STABLE  = 2;     // berapa frame berturut-turut
