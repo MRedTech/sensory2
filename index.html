@@ -710,7 +710,7 @@ function analyzeFrame(video) {
   const SHARP_THRESH = 250;   // ketajaman minimum
   const EDGE_MIN     = 0.055; // mesti ada text/garis (ID)
   const MOTION_MAX   = 7.5;   // mesti stabil (kurang gegar)
-  const NEED_STABLE  = 3;     // berapa frame berturut-turut
+  const NEED_STABLE  = 2;     // berapa frame berturut-turut
 
   focusAutoTimer = setInterval(() => {
     if (!video || autoSnapDone) return;
