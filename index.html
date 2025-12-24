@@ -652,25 +652,6 @@ function analyzeFrame(video) {
     gray[p] = (0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]) | 0;
   }
   
-  // hasTextLike
-  function hasTextLike(gray, w, h) {
-  let dark = 0, total = 0;
-  const T = 120; // boleh tune 120–140
-
-  for (let y = 0; y < h; y += 2) {
-    for (let x = 0; x < w; x += 2) {
-      const v = gray[y * w + x];
-      total++;
-      if (v < T) dark++;
-    }
-  }
-
-  const ratio = dark / total;
-
-  // mesti ada "ink" sederhana → text
-  return ratio >= 0.06 && ratio <= 0.35;
-  }
-
   // --- sharpness (variance of laplacian) + edge density ---
   let sum = 0, sumSq = 0, n = 0;
   let edgeCount = 0;
@@ -708,6 +689,25 @@ function analyzeFrame(video) {
 
   return { sharpness, edgeDensity, motion, gray, w, h };
 }
+
+    // hasTextLike
+  function hasTextLike(gray, w, h) {
+  let dark = 0, total = 0;
+  const T = 120; // boleh tune 120–140
+
+  for (let y = 0; y < h; y += 2) {
+    for (let x = 0; x < w; x += 2) {
+      const v = gray[y * w + x];
+      total++;
+      if (v < T) dark++;
+    }
+  }
+
+  const ratio = dark / total;
+
+  // mesti ada "ink" sederhana → text
+  return ratio >= 0.06 && ratio <= 0.35;
+  }
     
     function startFocusAutoSnap() {
   stopFocusAutoSnap();
