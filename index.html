@@ -636,7 +636,7 @@ let _roi = null; // { sx, sy, sw, sh } dalam pixel video
 function updateROIFromGuideline() {
   try {
     const guideline = document.querySelector(".guideline");
-    const videoEl = document.querySelector("#video"); // <-- tukar kalau id lain
+    const videoEl = document.querySelector("#camera-video");
     if (!guideline || !videoEl) { _roi = null; return; }
 
     const gr = guideline.getBoundingClientRect();
@@ -859,17 +859,23 @@ function stopFocusAutoSnap() {
     }
 
     async function startCamera() {
-      video = document.getElementById('camera-video');
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        video.srcObject = stream;
-        video.onloadedmetadata = () => {
+  video = document.getElementById("camera-video");
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" }
+    });
+
+    video.srcObject = stream;
+
+    video.onloadedmetadata = async () => {
+      try { await video.play(); } catch (e) {}
       startFocusAutoSnap();
     };
-      } catch (e) {
-        alert("Failed to open camera: " + e.message);
-        closeCameraModal();
-      }
+
+  } catch (e) {
+    alert("Failed to open camera: " + e.message);
+    closeCameraModal();
+  }
     }
 
     function closeCameraModal() {
