@@ -771,23 +771,7 @@ function analyzeFrame(video) {
 
   return { sharpness, edgeDensity, motion, gray, w, h };
 }
-
-function hasTextLike(gray, w, h) {
-  let dark = 0, total = 0;
-  const T = 125;
-
-  for (let y = 0; y < h; y += 2) {
-    for (let x = 0; x < w; x += 2) {
-      const v = gray[y * w + x];
-      total++;
-      if (v < T) dark++;
-    }
-  }
-
-  const ratio = dark / total;
-  return ratio >= 0.045 && ratio <= 0.40;
-}
-
+    
 function edgeDirectionScore(gray, w, h) {
   let v = 0, hEdge = 0;
   for (let y = 1; y < h - 1; y += 2) {
