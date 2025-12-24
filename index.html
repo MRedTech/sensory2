@@ -702,22 +702,7 @@ function hasTextLike(gray, w, h) {
   // elak kosong (ratio rendah) & elak terlalu gelap penuh (ratio tinggi)
   return ratio >= 0.045 && ratio <= 0.40;
 }
-
-// edge direction gate: text biasanya ada edge vertical + horizontal
-function edgeDirectionScore(gray, w, h) {
-  let v = 0, ho = 0;
-  for (let y = 1; y < h - 1; y += 2) {
-    for (let x = 1; x < w - 1; x += 2) {
-      const i = y * w + x;
-      const gx = Math.abs(gray[i + 1] - gray[i - 1]);
-      const gy = Math.abs(gray[i + w] - gray[i - w]);
-      if (gx > 25) v++;
-      if (gy > 25) ho++;
-    }
-  }
-  return { v, ho };
-}
-
+    
 function analyzeFrame(video) {
   const w = 160, h = 120;
   const c = document.createElement("canvas");
