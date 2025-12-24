@@ -725,8 +725,8 @@ function analyzeFrame(video) {
   }
 
   // ===== SETTINGS (lebih ketat, tak snap kalau tiada ID) =====
-  const MIN_WAIT_MS  = 600;   // tunggu kamera stabil dulu
-  const SHARP_THRESH = 260;   // ketajaman minimum
+  const MIN_WAIT_MS  = 450;   // tunggu kamera stabil dulu
+  const SHARP_THRESH = 240;   // ketajaman minimum
   const EDGE_MIN     = 0.055; // mesti ada text/garis (ID)
   const MOTION_MAX   = 7.5;   // mesti stabil (kurang gegar)
   const NEED_STABLE  = 2;     // berapa frame berturut-turut
