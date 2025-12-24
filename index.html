@@ -581,77 +581,123 @@
     let video  = null;
 
     // ===== BEEP SOUND =====
-function playBeep() {
-  try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    const audioCtx = new AudioCtx();
+    let _beepCtx = null;
 
-    const oscillator = audioCtx.createOscillator();
-    const gainNode   = audioCtx.createGain();
+    function playBeep() {
+  try {
+    if (!_beepCtx) return;
+
+    const oscillator = _beepCtx.createOscillator();
+    const gainNode = _beepCtx.createGain();
 
     oscillator.type = "sine";
     oscillator.frequency.value = 1200; // pitch
-    gainNode.gain.value = 0.15;        // volume (NORMAL)
+    gainNode.gain.value = 0.15;        // volume
 
     oscillator.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
+    gainNode.connect(_beepCtx.destination);
 
     oscillator.start();
-    setTimeout(() => {
-      oscillator.stop();
-      audioCtx.close();
-    }, 120);
+    setTimeout(() => oscillator.stop(), 120);
   } catch (e) {
-    console.log("Beep not supported:", e);
+    console.log("Beep error:", e);
   }
-}
+    }
+    
+    // ===== AUDIO UNLOCK (wajib utk beep auto) =====
+    function unlockAudioOnce() {
+  if (_beepCtx) return;
+
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    _beepCtx = new AudioCtx();
+
+    // silent tick (unlock audio on mobile)
+    const o = _beepCtx.createOscillator();
+    const g = _beepCtx.createGain();
+    g.gain.value = 0.0001;
+
+    o.connect(g);
+    g.connect(_beepCtx.destination);
+
+    o.start();
+    o.stop(_beepCtx.currentTime + 0.02);
+  } catch (e) {
+    console.log("Audio unlock fail:", e);
+  }
+    }
+
+// Unlock audio pada first tap/click user
+window.addEventListener("pointerdown", unlockAudioOnce, { once: true });
 
     // ===== FOCUS DETECT + AUTO SNAP =====
 let focusAutoTimer = null;
 let autoSnapDone = false;
 let sharpStable = 0;
 
-function getSharpnessScore(video) {
+let _prevFrameGray = null;
+
+function analyzeFrame(video) {
   const w = 160, h = 120;
   const c = document.createElement("canvas");
   c.width = w; c.height = h;
-
   const ctx = c.getContext("2d", { willReadFrequently: true });
   ctx.drawImage(video, 0, 0, w, h);
 
   const data = ctx.getImageData(0, 0, w, h).data;
 
-  // grayscale ringkas
+  // grayscale
   const gray = new Uint8ClampedArray(w * h);
   for (let i = 0, p = 0; i < data.length; i += 4, p++) {
     gray[p] = (0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]) | 0;
   }
 
-  // Variance of Laplacian (sharpness)
+  // --- sharpness (variance of laplacian) + edge density ---
   let sum = 0, sumSq = 0, n = 0;
+  let edgeCount = 0;
+
   for (let y = 1; y < h - 1; y++) {
-    for (let x = 1; x < w - 1; x++) {
-      const i = y * w + x;
-      const lap =
-        -4 * gray[i] +
-        gray[i - 1] + gray[i + 1] +
-        gray[i - w] + gray[i + w];
+  for (let x = 1; x < w - 1; x++) {
+    const i = y * w + x;
+    const lap =
+      -4 * gray[i] +
+      gray[i - 1] + gray[i + 1] +
+      gray[i - w] + gray[i + w];
 
-      sum += lap;
-      sumSq += lap * lap;
-      n++;
-    }
+    sum += lap;
+    sumSq += lap * lap;
+    n++;
+
+    if (Math.abs(lap) > 22) edgeCount++;
+   }
   }
-
+  
   const mean = sum / n;
-  const variance = (sumSq / n) - (mean * mean);
-  return variance;
-}
+  const sharpness = (sumSq / n) - (mean * mean);
+  const edgeDensity = edgeCount / n; // 0..1
 
-function startFocusAutoSnap() {
+  // --- motion score (perubahan frame) ---
+  let motion = 999;
+  if (_prevFrameGray) {
+    let diff = 0;
+    for (let i = 0; i < gray.length; i += 3) {
+      diff += Math.abs(gray[i] - _prevFrameGray[i]);
+    }
+    motion = diff / (gray.length / 3);
+  }
+  _prevFrameGray = gray;
+
+  return { sharpness, edgeDensity, motion };
+    }
+
+    function startFocusAutoSnap() {
   stopFocusAutoSnap();
   autoSnapDone = false;
   sharpStable = 0;
+
+  // reset baseline motion setiap kali buka kamera
+  _prevFrameGray = null;
+  const startTime = Date.now();
 
   const guideline = document.querySelector(".guideline");
   if (guideline) {
@@ -659,17 +705,27 @@ function startFocusAutoSnap() {
     guideline.classList.add("focus-wait");
   }
 
-  // Tak strict (mesra guard)
-  const THRESH = 120;     // boleh tune 100–180
-  const NEED_STABLE = 2;  // cepat, tak sangkut
+  // ===== SETTINGS (lebih ketat, tak snap kalau tiada ID) =====
+  const MIN_WAIT_MS  = 900;   // tunggu kamera stabil dulu
+  const SHARP_THRESH = 260;   // ketajaman minimum
+  const EDGE_MIN     = 0.055; // mesti ada text/garis (ID)
+  const MOTION_MAX   = 6.5;   // mesti stabil (kurang gegar)
+  const NEED_STABLE  = 4;     // berapa frame berturut-turut
 
   focusAutoTimer = setInterval(() => {
     if (!video || autoSnapDone) return;
 
-    const score = getSharpnessScore(video);
-    const isSharp = score >= THRESH;
+    // tunggu sekejap selepas camera open (elak snap kosong)
+    if (Date.now() - startTime < MIN_WAIT_MS) return;
 
-    sharpStable = isSharp ? (sharpStable + 1) : 0;
+    const { sharpness, edgeDensity, motion } = analyzeFrame(video);
+
+    const ok =
+      sharpness >= SHARP_THRESH &&
+      edgeDensity >= EDGE_MIN &&
+      motion <= MOTION_MAX;
+
+    sharpStable = ok ? (sharpStable + 1) : 0;
 
     if (sharpStable >= NEED_STABLE) {
       autoSnapDone = true;
@@ -679,12 +735,13 @@ function startFocusAutoSnap() {
         guideline.classList.remove("focus-wait");
       }
 
+      // pastikan beep boleh bunyi di mobile
+      unlockAudioOnce();
       playBeep();
 
       setTimeout(() => {
-        // guna function captureImage sedia ada (crop+OCR kekal)
-        captureImage();
-      }, 180);
+        captureImage(); // crop+OCR kekal guna function sedia ada
+      }, 220);
     }
   }, 220);
 }
@@ -692,8 +749,8 @@ function startFocusAutoSnap() {
 function stopFocusAutoSnap() {
   if (focusAutoTimer) clearInterval(focusAutoTimer);
   focusAutoTimer = null;
-  }
-
+}
+    
     function openCamera() {
       document.getElementById('cameraModal').style.display = 'flex';
       startCamera();
