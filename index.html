@@ -580,6 +580,7 @@
     let stream = null;
     let video  = null;
     let _roi = null;
+    let _booted = false;
 
     // =====================================================
 // AUTOSNAP PATCH (ROI GUIDELINE + TEXT GATE + STABLE)
@@ -851,6 +852,9 @@ function stopFocusAutoSnap() {
 video.onloadeddata = null;
 
 const boot = async () => {
+  if (_booted) return;   // <-- BOOT SEKALI SAHAJA
+  _booted = true;
+
   try { await video.play(); } catch (e) {}
   startFocusAutoSnap();
 };
@@ -865,6 +869,7 @@ video.onloadeddata = boot;
     }
 
     function closeCameraModal() {
+  _booted = false;
   stopFocusAutoSnap();
 
   document.getElementById('cameraModal').style.display = 'none';
