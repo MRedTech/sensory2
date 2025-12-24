@@ -691,7 +691,7 @@ let _prevFrameGray = null;
 // detect text-like ink ratio (simple & fast)
 function hasTextLike(gray, w, h) {
   let dark = 0, total = 0;
-  const T = 125; // 120-140 (lebih besar = lebih ketat)
+  const T = 120; // 120-140 (lebih besar = lebih ketat)
   for (let y = 0; y < h; y += 2) {
     for (let x = 0; x < w; x += 2) {
       const v = gray[y * w + x];
