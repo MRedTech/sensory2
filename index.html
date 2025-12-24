@@ -579,6 +579,7 @@
     // --- MODAL CAMERA + GUIDELINE & AUTO-CROP ---
     let stream = null;
     let video  = null;
+    let _roi = null;
 
     // =====================================================
 // AUTOSNAP PATCH (ROI GUIDELINE + TEXT GATE + STABLE)
@@ -631,43 +632,42 @@ window.addEventListener("pointerdown", unlockAudioOnce, { once: true });
 
 
 // ===== ROI (ikut guideline hijau) =====
-let _roi = null; // { sx, sy, sw, sh } dalam pixel video
-
 function updateROIFromGuideline() {
   try {
     const guideline = document.querySelector(".guideline");
-    const videoEl = document.querySelector("#camera-video");
-    if (!guideline || !videoEl) { _roi = null; return; }
+    const container = document.querySelector(".camera-container");
+    const videoEl   = document.getElementById("camera-video");
+
+    if (!guideline || !container || !videoEl) {
+      _roi = null; 
+      return;
+    }
 
     const gr = guideline.getBoundingClientRect();
-    const vr = videoEl.getBoundingClientRect();
+    const cr = container.getBoundingClientRect();
 
-    // overlap area guideline dalam viewport video
-    const left = Math.max(gr.left, vr.left);
-    const top = Math.max(gr.top, vr.top);
-    const right = Math.min(gr.right, vr.right);
-    const bottom = Math.min(gr.bottom, vr.bottom);
-
-    const cssW = right - left;
-    const cssH = bottom - top;
-    if (cssW < 20 || cssH < 20) { _roi = null; return; }
-
-    const vw = videoEl.videoWidth || 0;
-    const vh = videoEl.videoHeight || 0;
+    const vw = videoEl.videoWidth;
+    const vh = videoEl.videoHeight;
     if (!vw || !vh) { _roi = null; return; }
 
-    const scaleX = vw / vr.width;
-    const scaleY = vh / vr.height;
+    // posisi guideline relatif kepada container
+    let rx = (gr.left - cr.left) / cr.width;
+    let ry = (gr.top  - cr.top)  / cr.height;
+    let rw = gr.width  / cr.width;
+    let rh = gr.height / cr.height;
 
-    let sx = (left - vr.left) * scaleX;
-    let sy = (top - vr.top) * scaleY;
-    let sw = cssW * scaleX;
-    let sh = cssH * scaleY;
+    // tukar ke pixel video
+    let sx = rx * vw;
+    let sy = ry * vh;
+    let sw = rw * vw;
+    let sh = rh * vh;
 
-    // padding kecil (supaya tepi guideline tak ketat)
+    // padding kecil (biar tak ketat)
     const pad = 0.06;
-    sx -= sw * pad; sy -= sh * pad;
-    sw += sw * pad * 2; sh += sh * pad * 2;
+    sx -= sw * pad;
+    sy -= sh * pad;
+    sw += sw * pad * 2;
+    sh += sh * pad * 2;
 
     // clamp
     sx = Math.max(0, sx);
@@ -680,7 +680,6 @@ function updateROIFromGuideline() {
     _roi = null;
   }
 }
-
 
 // ===== FOCUS DETECT + AUTO SNAP =====
 let focusAutoTimer = null;
@@ -725,7 +724,6 @@ function analyzeFrame(video) {
   c.width = w; c.height = h;
   const ctx = c.getContext("2d", { willReadFrequently: true });
 
-  // DRAW ROI ONLY (ikut guideline)
   if (_roi) {
     ctx.drawImage(video, _roi.sx, _roi.sy, _roi.sw, _roi.sh, 0, 0, w, h);
   } else {
@@ -734,16 +732,13 @@ function analyzeFrame(video) {
 
   const data = ctx.getImageData(0, 0, w, h).data;
 
-  // grayscale
   const gray = new Uint8ClampedArray(w * h);
   for (let i = 0, p = 0; i < data.length; i += 4, p++) {
     gray[p] = (0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]) | 0;
   }
 
-  // sharpness (variance of laplacian) + edge density
-  let sum = 0, sumSq = 0, n = 0;
-  let edgeCount = 0;
-
+  // sharpness + edge density
+  let sum = 0, sumSq = 0, n = 0, edgeCount = 0;
   for (let y = 1; y < h - 1; y++) {
     for (let x = 1; x < w - 1; x++) {
       const i = y * w + x;
@@ -755,7 +750,6 @@ function analyzeFrame(video) {
       sum += lap;
       sumSq += lap * lap;
       n++;
-
       if (Math.abs(lap) > 22) edgeCount++;
     }
   }
@@ -764,7 +758,7 @@ function analyzeFrame(video) {
   const sharpness = (sumSq / n) - (mean * mean);
   const edgeDensity = edgeCount / n;
 
-  // motion score
+  // motion
   let motion = 999;
   if (_prevFrameGray) {
     let diff = 0;
@@ -778,25 +772,52 @@ function analyzeFrame(video) {
   return { sharpness, edgeDensity, motion, gray, w, h };
 }
 
+function hasTextLike(gray, w, h) {
+  let dark = 0, total = 0;
+  const T = 125;
+
+  for (let y = 0; y < h; y += 2) {
+    for (let x = 0; x < w; x += 2) {
+      const v = gray[y * w + x];
+      total++;
+      if (v < T) dark++;
+    }
+  }
+
+  const ratio = dark / total;
+  return ratio >= 0.045 && ratio <= 0.40;
+}
+
+function edgeDirectionScore(gray, w, h) {
+  let v = 0, hEdge = 0;
+  for (let y = 1; y < h - 1; y += 2) {
+    for (let x = 1; x < w - 1; x += 2) {
+      const i = y * w + x;
+      if (Math.abs(gray[i + 1] - gray[i - 1]) > 25) v++;
+      if (Math.abs(gray[i + w] - gray[i - w]) > 25) hEdge++;
+    }
+  }
+  return { v, h: hEdge };
+}
+
 function startFocusAutoSnap() {
   stopFocusAutoSnap();
   autoSnapDone = false;
   sharpStable = 0;
-
   _prevFrameGray = null;
-  const startTime = Date.now();
 
+  const startTime = Date.now();
   const guideline = document.querySelector(".guideline");
+
   if (guideline) {
     guideline.classList.remove("focus-google");
     guideline.classList.add("focus-wait");
   }
 
-  // update ROI ikut guideline
   updateROIFromGuideline();
   setTimeout(updateROIFromGuideline, 200);
 
-  // ===== SETTINGS (guard house) =====
+  // === GUARD HOUSE TUNING ===
   const MIN_WAIT_MS  = 450;
   const SHARP_THRESH = 220;
   const EDGE_MIN     = 0.040;
@@ -805,53 +826,43 @@ function startFocusAutoSnap() {
 
   focusAutoTimer = setInterval(() => {
     if (!video || autoSnapDone) return;
-
     if (Date.now() - startTime < MIN_WAIT_MS) return;
 
-    // ROI mungkin berubah bila rotate/resize
     updateROIFromGuideline();
 
     const { sharpness, edgeDensity, motion, gray, w, h } = analyzeFrame(video);
-
     const textOk = hasTextLike(gray, w, h);
-    const { v, ho } = edgeDirectionScore(gray, w, h);
-
-    // gate direction (tune kalau perlu)
-    const dirOk = (v > 350 && ho > 350);
+    const { v, h: ho } = edgeDirectionScore(gray, w, h);
 
     const ok =
       textOk &&
-      dirOk &&
+      v > 300 && ho > 300 &&
       sharpness >= SHARP_THRESH &&
       edgeDensity >= EDGE_MIN &&
       motion <= MOTION_MAX;
 
-    sharpStable = ok ? (sharpStable + 1) : 0;
+    sharpStable = ok ? sharpStable + 1 : 0;
 
     if (sharpStable >= NEED_STABLE) {
       autoSnapDone = true;
 
-      if (guideline) {
-        guideline.classList.add("focus-google");
-        guideline.classList.remove("focus-wait");
-      }
+      guideline?.classList.add("focus-google");
+      guideline?.classList.remove("focus-wait");
 
       unlockAudioOnce();
       playBeep();
 
       setTimeout(() => {
-        // guna function sedia ada Edos
         if (typeof captureImage === "function") captureImage();
-        else if (typeof captureImageWithWatermark === "function") captureImageWithWatermark();
       }, 220);
     }
   }, 220);
 }
-
+    
 function stopFocusAutoSnap() {
   if (focusAutoTimer) clearInterval(focusAutoTimer);
   focusAutoTimer = null;
-      }
+}
     
     function openCamera() {
       document.getElementById('cameraModal').style.display = 'flex';
@@ -867,11 +878,17 @@ function stopFocusAutoSnap() {
 
     video.srcObject = stream;
 
-    video.onloadedmetadata = async () => {
-      try { await video.play(); } catch (e) {}
-      startFocusAutoSnap();
-    };
+    video.onloadedmetadata = null;
+video.onloadeddata = null;
 
+const boot = async () => {
+  try { await video.play(); } catch (e) {}
+  startFocusAutoSnap();
+};
+
+video.onloadedmetadata = boot;
+video.onloadeddata = boot;
+    
   } catch (e) {
     alert("Failed to open camera: " + e.message);
     closeCameraModal();
@@ -879,14 +896,23 @@ function stopFocusAutoSnap() {
     }
 
     function closeCameraModal() {
-      stopFocusAutoSnap();
-      document.getElementById('cameraModal').style.display = 'none';
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-        stream = null;
-      }
-    }
+  stopFocusAutoSnap();
 
+  document.getElementById('cameraModal').style.display = 'none';
+
+  if (video) {
+    try { video.pause(); } catch (e) {}
+    video.srcObject = null;
+  }
+
+  if (stream) {
+    stream.getTracks().forEach(t => t.stop());
+    stream = null;
+  }
+
+  video = null;
+    }
+    
     // === MODE A: GRAYSCALE + CONTRAST ENHANCEMENT ===
     function applyGrayscaleContrast(canvas) {
       const ctx = canvas.getContext('2d');
