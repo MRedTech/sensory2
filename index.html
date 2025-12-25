@@ -636,39 +636,39 @@ window.addEventListener("pointerdown", unlockAudioOnce, { once: true });
 function updateROIFromGuideline() {
   try {
     const guideline = document.querySelector(".guideline");
-    const container = document.querySelector(".camera-container");
     const videoEl   = document.getElementById("camera-video");
 
-    if (!guideline || !container || !videoEl) {
-      _roi = null; 
-      return;
-    }
+    if (!guideline || !videoEl) { _roi = null; return; }
 
     const gr = guideline.getBoundingClientRect();
-    const cr = container.getBoundingClientRect();
+    const vr = videoEl.getBoundingClientRect();
 
-    const vw = videoEl.videoWidth;
-    const vh = videoEl.videoHeight;
+    // overlap guideline dengan video sebenar (penting bila height:auto)
+    const left   = Math.max(gr.left, vr.left);
+    const top    = Math.max(gr.top, vr.top);
+    const right  = Math.min(gr.right, vr.right);
+    const bottom = Math.min(gr.bottom, vr.bottom);
+
+    const cssW = right - left;
+    const cssH = bottom - top;
+    if (cssW < 20 || cssH < 20) { _roi = null; return; }
+
+    const vw = videoEl.videoWidth || 0;
+    const vh = videoEl.videoHeight || 0;
     if (!vw || !vh) { _roi = null; return; }
 
-    // posisi guideline relatif kepada container
-    let rx = (gr.left - cr.left) / cr.width;
-    let ry = (gr.top  - cr.top)  / cr.height;
-    let rw = gr.width  / cr.width;
-    let rh = gr.height / cr.height;
+    const scaleX = vw / vr.width;
+    const scaleY = vh / vr.height;
 
-    // tukar ke pixel video
-    let sx = rx * vw;
-    let sy = ry * vh;
-    let sw = rw * vw;
-    let sh = rh * vh;
+    let sx = (left - vr.left) * scaleX;
+    let sy = (top - vr.top) * scaleY;
+    let sw = cssW * scaleX;
+    let sh = cssH * scaleY;
 
-    // padding kecil (biar tak ketat)
+    // padding kecil
     const pad = 0.06;
-    sx -= sw * pad;
-    sy -= sh * pad;
-    sw += sw * pad * 2;
-    sh += sh * pad * 2;
+    sx -= sw * pad; sy -= sh * pad;
+    sw += sw * pad * 2; sh += sh * pad * 2;
 
     // clamp
     sx = Math.max(0, sx);
@@ -681,7 +681,7 @@ function updateROIFromGuideline() {
     _roi = null;
   }
 }
-
+    
 // ===== FOCUS DETECT + AUTO SNAP =====
 let focusAutoTimer = null;
 let autoSnapDone = false;
@@ -691,7 +691,7 @@ let _prevFrameGray = null;
 // detect text-like ink ratio (simple & fast)
 function hasTextLike(gray, w, h) {
   let dark = 0, total = 0;
-  const T = 120; // 120-140 (lebih besar = lebih ketat)
+  const T = 140; // 120-140 (lebih besar = lebih ketat)
   for (let y = 0; y < h; y += 2) {
     for (let x = 0; x < w; x += 2) {
       const v = gray[y * w + x];
@@ -700,8 +700,7 @@ function hasTextLike(gray, w, h) {
     }
   }
   const ratio = dark / total;
-  // elak kosong (ratio rendah) & elak terlalu gelap penuh (ratio tinggi)
-  return ratio >= 0.045 && ratio <= 0.40;
+  return ratio >= 0.02 && ratio <= 0.55;
 }
     
 function analyzeFrame(video) {
@@ -788,8 +787,8 @@ function startFocusAutoSnap() {
   setTimeout(updateROIFromGuideline, 200);
 
   // === GUARD HOUSE TUNING ===
-  const MIN_WAIT_MS  = 450;
-  const SHARP_THRESH = 220;
+  const MIN_WAIT_MS  = 350;
+  const SHARP_THRESH = 190;
   const EDGE_MIN     = 0.040;
   const MOTION_MAX   = 9.5;
   const NEED_STABLE  = 2;
@@ -806,7 +805,7 @@ function startFocusAutoSnap() {
 
     const ok =
       textOk &&
-      v > 180 && ho > 180 &&
+      v > 150 && ho > 150 &&
       sharpness >= SHARP_THRESH &&
       edgeDensity >= EDGE_MIN &&
       motion <= MOTION_MAX;
