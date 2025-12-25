@@ -842,9 +842,9 @@ function startFocusAutoSnap() {
 
   // === GUARD HOUSE TUNING ===
   const MIN_WAIT_MS  = 350;
-  const SHARP_THRESH = 190;
-  const EDGE_MIN     = 0.040;
-  const MOTION_MAX   = 9.5;
+  const SHARP_THRESH = 170;
+  const EDGE_MIN     = 0.026;
+  const MOTION_MAX   = 12.0;
   const NEED_STABLE  = 2;
 
   focusAutoTimer = setInterval(() => {
@@ -859,9 +859,9 @@ function startFocusAutoSnap() {
 
 const ok =
   textOk &&
-  lines >= 4 &&              // mesti ada pattern baris teks
-  all >= 260 &&              // mesti ada edge cukup (tapi bukan random sikit2)
-  v >= 140 && ho >= 140 &&   // arah edge ada balance
+  lines >= 3 &&              // mesti ada pattern baris teks
+  all >= 170 &&              // mesti ada edge cukup (tapi bukan random sikit2)
+  v >= 85 && ho >= 85 &&   // arah edge ada balance
   sharpness >= SHARP_THRESH &&
   edgeDensity >= EDGE_MIN &&
   motion <= MOTION_MAX;
