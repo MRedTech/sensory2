@@ -688,78 +688,74 @@ let autoSnapDone = false;
 let sharpStable = 0;
 let _prevFrameGray = null;
 
-// detect text-like ink ratio (simple & fast)
+// ===== TEXT GATE (lebih stabil untuk guard house) =====
 function hasTextLike(gray, w, h) {
-  // Fokus tengah ROI sahaja (buang border 12%)
+  // ignore border 12% (tepi tangan / background)
   const mx = Math.floor(w * 0.12);
   const my = Math.floor(h * 0.12);
   const x2 = w - mx;
   const y2 = h - my;
 
-  // kira mean + variance untuk adaptive threshold
-  let sum = 0, sumSq = 0, n = 0;
+  let dark = 0, total = 0;
+  const T = 135; // naik sikit (lebih tahan background tangan)
+
   for (let y = my; y < y2; y += 2) {
     for (let x = mx; x < x2; x += 2) {
       const v = gray[y * w + x];
-      sum += v; sumSq += v * v; n++;
-    }
-  }
-  if (!n) return false;
-  const mean = sum / n;
-  const varr = (sumSq / n) - (mean * mean);
-  const std = Math.sqrt(Math.max(0, varr));
-
-  // Adaptive threshold: bila luar terang/gelap, T ikut keadaan
-  // (lebih stabil daripada fixed T)
-  const T = Math.max(95, Math.min(160, mean - std * 0.15));
-
-  // Text detector: kira "transitions" (hitam->putih) dalam baris
-  // Text biasanya menghasilkan banyak transitions pendek
-  let transitions = 0, samples = 0;
-
-  for (let y = my; y < y2; y += 3) {
-    let prev = gray[y * w + mx] < T ? 1 : 0;
-    for (let x = mx + 3; x < x2; x += 3) {
-      const cur = gray[y * w + x] < T ? 1 : 0;
-      if (cur !== prev) transitions++;
-      prev = cur;
-      samples++;
+      total++;
+      if (v < T) dark++;
     }
   }
 
-  const ratio = transitions / Math.max(1, samples);
+  const ratio = dark / total;
 
-  // range yang biasanya "text present"
-  // (background tangan biasanya ratio terlalu rendah atau terlalu tinggi rawak)
-  return ratio >= 0.08 && ratio <= 0.35;
+  // praktikal: tak kosong, tak gelap penuh
+  return ratio >= 0.03 && ratio <= 0.68;
 }
-  
+
+// ===== EDGE + TEXT-LINE GATE =====
 function edgeDirectionScore(gray, w, h) {
-  // Fokus tengah (buang border 12%)
   const mx = Math.floor(w * 0.12);
   const my = Math.floor(h * 0.12);
   const x2 = w - mx;
   const y2 = h - my;
 
-  let v = 0, ho = 0;
+  let v = 0, hEdge = 0, all = 0;
 
+  // edge direction
   for (let y = my + 1; y < y2 - 1; y += 2) {
     for (let x = mx + 1; x < x2 - 1; x += 2) {
       const i = y * w + x;
       const gx = Math.abs(gray[i + 1] - gray[i - 1]);
       const gy = Math.abs(gray[i + w] - gray[i - w]);
 
-      if (gx + gy > 30) {
-        if (gx > 20) v++;
-        if (gy > 20) ho++;
-      }
+      if (gx > 22) v++;
+      if (gy > 22) hEdge++;
+      if (gx + gy > 40) all++;
     }
   }
 
-  const all = v + ho; 
-  return { v, ho, all };
-}
+  // text-line score (kad biasanya ada banyak baris teks)
+  let lines = 0;
+  const TT = 140;
 
+  for (let y = Math.floor(h * 0.22); y < Math.floor(h * 0.88); y += 4) {
+    let trans = 0;
+    let prev = gray[y * w + mx] < TT;
+
+    for (let x = mx + 2; x < x2; x += 2) {
+      const cur = gray[y * w + x] < TT;
+      if (cur !== prev) trans++;
+      prev = cur;
+    }
+
+    // range trans yang biasa utk text (bukan texture rawak)
+    if (trans >= 14 && trans <= 120) lines++;
+  }
+
+  return { v, h: hEdge, all, lines };
+}
+    
 function analyzeFrame(video) {
   const w = 160, h = 120;
   const c = document.createElement("canvas");
@@ -840,7 +836,7 @@ function startFocusAutoSnap() {
   }
 
   updateROIFromGuideline();
-  setTimeout(updateROIFromGuideline, 200);
+  if (!_roi) { sharpStable = 0; return; }
 
   // === GUARD HOUSE TUNING ===
   const MIN_WAIT_MS  = 350;
@@ -857,14 +853,16 @@ function startFocusAutoSnap() {
 
     const { sharpness, edgeDensity, motion, gray, w, h } = analyzeFrame(video);
     const textOk = hasTextLike(gray, w, h);
-    const { v, ho, all } = edgeDirectionScore(gray, w, h);
+    const { v, h: ho, all, lines } = edgeDirectionScore(gray, w, h);
 
-    const ok =
-      textOk &&
-      v > 120 && ho > 120 && all > 180 &&
-      sharpness >= SHARP_THRESH &&
-      edgeDensity >= EDGE_MIN &&
-      motion <= MOTION_MAX;
+const ok =
+  textOk &&
+  lines >= 4 &&              // mesti ada pattern baris teks
+  all >= 260 &&              // mesti ada edge cukup (tapi bukan random sikit2)
+  v >= 140 && ho >= 140 &&   // arah edge ada balance
+  sharpness >= SHARP_THRESH &&
+  edgeDensity >= EDGE_MIN &&
+  motion <= MOTION_MAX;
 
     sharpStable = ok ? sharpStable + 1 : 0;
 
