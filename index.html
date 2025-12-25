@@ -906,8 +906,10 @@ function stopFocusAutoSnap() {
     });
 
     video.srcObject = stream;
+
+    // clear handler lama (avoid double trigger)
     video.onloadeddata = null;
-video.onloadedmetadata = null;
+    video.onloadedmetadata = null;
 
     // reset state
     _booted = false;
@@ -918,14 +920,15 @@ video.onloadedmetadata = null;
 
       try { await video.play(); } catch (e) {}
 
-      // tunggu 1 frame supaya videoWidth / videoHeight betul
+      // tunggu 2 frame supaya layout + videoWidth/videoHeight betul
       requestAnimationFrame(() => {
-  requestAnimationFrame(() => {
-    updateROIFromGuideline();
-    stopFocusAutoSnap();
-    startFocusAutoSnap();
-  });
-});
+        requestAnimationFrame(() => {
+          updateROIFromGuideline();
+          stopFocusAutoSnap();
+          startFocusAutoSnap();
+        });
+      });
+    };
 
   } catch (e) {
     alert("Failed to open camera: " + e.message);
