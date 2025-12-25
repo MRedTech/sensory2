@@ -896,27 +896,34 @@ function stopFocusAutoSnap() {
 
     async function startCamera() {
   video = document.getElementById("camera-video");
+
   try {
     stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: "environment" }
     });
 
     video.srcObject = stream;
+    video.onloadeddata = null;
+video.onloadedmetadata = null;
 
-    video.onloadedmetadata = null;
-video.onloadeddata = null;
+    // reset state
+    _booted = false;
 
-const boot = async () => {
-  if (_booted) return;   // <-- BOOT SEKALI SAHAJA
-  _booted = true;
+    video.onloadeddata = async () => {
+      if (_booted) return;
+      _booted = true;
 
-  try { await video.play(); } catch (e) {}
-  startFocusAutoSnap();
-};
+      try { await video.play(); } catch (e) {}
 
-video.onloadedmetadata = boot;
-video.onloadeddata = boot;
-    
+      // tunggu 1 frame supaya videoWidth / videoHeight betul
+      requestAnimationFrame(() => {
+  requestAnimationFrame(() => {
+    updateROIFromGuideline();
+    stopFocusAutoSnap();
+    startFocusAutoSnap();
+  });
+});
+
   } catch (e) {
     alert("Failed to open camera: " + e.message);
     closeCameraModal();
