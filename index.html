@@ -697,7 +697,7 @@ function hasTextLike(gray, w, h) {
   const y2 = h - my;
 
   let dark = 0, total = 0;
-  const T = 140; // lebih tegas (anti tekstur & bayang)
+  const T = 120;
 
   for (let y = my; y < y2; y += 2) {
     for (let x = mx; x < x2; x += 2) {
@@ -844,7 +844,7 @@ if (!_roi) {
     }
 
   // === GUARD HOUSE TUNING ===
-  const MIN_WAIT_MS  = 350;
+  const MIN_WAIT_MS  = 180;
   const SHARP_THRESH = 120;
   const EDGE_MIN     = 0.018;
   const MOTION_MAX   = 15.0;
@@ -882,9 +882,9 @@ const ok =
 
       setTimeout(() => {
         if (typeof captureImage === "function") captureImage();
-      }, 220);
+      }, 140);
     }
-  }, 220);
+  }, 140);
 }
     
 function stopFocusAutoSnap() {
