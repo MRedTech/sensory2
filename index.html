@@ -688,16 +688,16 @@ let autoSnapDone = false;
 let sharpStable = 0;
 let _prevFrameGray = null;
 
-// ===== TEXT GATE (lebih stabil untuk guard house) =====
+// ===== TEXT GATE (STRICT – khas MyKad / Lesen Malaysia) =====
 function hasTextLike(gray, w, h) {
-  // ignore border 12% (tepi tangan / background)
-  const mx = Math.floor(w * 0.12);
-  const my = Math.floor(h * 0.12);
+  // buang border (tangan / background)
+  const mx = Math.floor(w * 0.15);
+  const my = Math.floor(h * 0.15);
   const x2 = w - mx;
   const y2 = h - my;
 
   let dark = 0, total = 0;
-  const T = 135; // naik sikit (lebih tahan background tangan)
+  const T = 140; // lebih tegas (anti tekstur & bayang)
 
   for (let y = my; y < y2; y += 2) {
     for (let x = mx; x < x2; x += 2) {
@@ -709,8 +709,10 @@ function hasTextLike(gray, w, h) {
 
   const ratio = dark / total;
 
-  // praktikal: tak kosong, tak gelap penuh
-  return ratio >= 0.03 && ratio <= 0.68;
+  // ✅ Julat realistik teks ID Malaysia
+  // - bawah 8% → kosong / tekstur
+  // - atas 42% → terlalu gelap / bayang
+  return ratio >= 0.08 && ratio <= 0.42;
 }
 
 // ===== EDGE + TEXT-LINE GATE =====
