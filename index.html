@@ -1119,8 +1119,12 @@ reasonSelect.addEventListener('change', function() {
       // 1) Normalize OCR text (remove punctuation noise)
       let t = normalizeForFilter(text);
 
-      // 2) Jika ada ALAMAT / ADDRESS dan jumpa keyword alamat (walaupun tiada perkataan ALAMAT),
-       
+      // 2) Jika ada ALAMAT / ADDRESS potong semua baris selepas itu
+      const cutIdx = t.search(/\b(ALAMAT|ADDRESS)\b/);
+      if (cutIdx !== -1) {
+      t = t.slice(0, cutIdx).trim();
+      }
+      
       const ADDRESS_CUTOFF_REGEX =
       /\b(ALAMAT|ADDRESS|NO\.?|JALAN|LORONG|TAMAN|KAMPUNG|BANDAR|SEKSYEN|PERSIARAN|APARTMENT|APARTMEN|FLAT|RESIDENSI|HEIGHTS?|HEIGHT)\b/;
 
