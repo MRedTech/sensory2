@@ -719,14 +719,14 @@ const OCR_LIVE = {
   rafId: null,
   lastTick: 0,
   TH: {
-  sharpness: 85,
-  contrast: 32,
+  sharpness: 90,
+  contrast: 30,
   brightnessMin: 70,
   brightnessMax: 210,
-  stabilityDelta: 6,     // frame change kecil = stabil
-  glareWhitePct: 0.12,   // >12% pixel putih = silau
-  shadowBlackPct: 0.18,  // >18% pixel hitam = bayang
-  alignEdgeRatio: 0.6    // anggaran alignment
+  stabilityDelta: 10,     
+  glareWhitePct: 0.06,   
+  shadowBlackPct: 0.14,  
+  alignEdgeRatio: 0.55  
   }
 };
 
@@ -784,12 +784,18 @@ function getGrayFrame(videoEl, canvasEl){
     
   function pctExtreme(gray, mode){
   let c = 0;
-  for (let i=0;i<gray.length;i++){
-    if (mode==="white" && gray[i] > 245) c++;
-    if (mode==="black" && gray[i] < 10) c++;
+  const n = gray.length;
+
+  const WHITE_T = 230;   
+  const BLACK_T = 18;   
+
+  for (let i=0;i<n;i++){
+    const v = gray[i];
+    if (mode === "white" && v >= WHITE_T) c++;
+    if (mode === "black" && v <= BLACK_T) c++;
   }
-  return c / gray.length;
-}
+  return c / n;
+    }
 
 let lastFrameGray = null;
 
