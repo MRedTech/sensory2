@@ -286,6 +286,65 @@
     pointer-events: none;
     box-sizing: border-box;
   }
+.ocr-panel{
+  position:absolute;
+  left:10px;
+  bottom:10px;
+  z-index:60;
+  padding:10px 10px;
+  border-radius:12px;
+  background:rgba(0,0,0,.40);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border:1px solid rgba(255,255,255,.18);
+  color:#fff;
+  width:max-content;
+  max-width:220px;
+  user-select:none;
+  pointer-events:none;
+}
+.ocr-title{
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.8px;
+  margin-bottom:6px;
+  opacity:.95;
+}
+.ocr-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:6px 0;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.6px;
+}
+.ocr-item .dot{
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  box-shadow:0 0 0 3px rgba(255,255,255,.08);
+}
+.ocr-item.bad{ color:#ffd4d4; }
+.ocr-item.bad .dot{ background:#ff3b3b; box-shadow:0 0 12px rgba(255,59,59,.65); }
+.ocr-item.good{ color:#d7ffe5; }
+.ocr-item.good .dot{ background:#16c172; box-shadow:0 0 12px rgba(22,193,114,.85); }
+
+.guideline.ocr-ready{
+  animation: ocrGoogleBorder 1.4s linear infinite, ocrGlow 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes ocrGoogleBorder{
+  0%   { border-color:#34A853; }  /* green */
+  25%  { border-color:#FBBC05; }  /* yellow */
+  50%  { border-color:#4285F4; }  /* blue */
+  75%  { border-color:#EA4335; }  /* red */
+  100% { border-color:#34A853; }
+}
+@keyframes ocrGlow{
+  0%   { box-shadow: 0 0 0 rgba(0,0,0,0); }
+  100% { box-shadow: 0 0 26px rgba(255,255,255,.35); }
+}
   .close-cam-btn {
     position: absolute;
     top: 10px;
@@ -555,13 +614,26 @@
   <!-- === MODAL KAMERA UNTUK GUIDELINE === -->
   <div id="cameraModal" class="camera-modal" style="display:none;">
     <div class="camera-container">
-      <video id="camera-video" autoplay playsinline></video>
-      <div class="guideline"></div>
-      <button class="close-cam-btn" type="button" onclick="closeCameraModal()">×</button>
-    </div>
-    <button class="capture-btn-3d" type="button" onclick="captureImage()"></button>
+  <video id="camera-video" autoplay playsinline></video>
+
+  <div class="guideline" id="ocrGuideline"></div>
+
+  <!-- OCR LIVE LIST (BOTTOM-LEFT) -->
+  <div id="ocrLivePanel" class="ocr-panel">
+    <div class="ocr-title">OCR QUALITY</div>
+
+    <div class="ocr-item bad" data-key="sharp"><span class="dot"></span><span>SHARPNESS</span></div>
+    <div class="ocr-item bad" data-key="clarity"><span class="dot"></span><span>CLARITY</span></div>
+    <div class="ocr-item bad" data-key="contrast"><span class="dot"></span><span>CONTRAST</span></div>
+    <div class="ocr-item bad" data-key="light"><span class="dot"></span><span>LIGHTING</span></div>
   </div>
 
+  <!-- hidden probe canvas -->
+  <canvas id="ocrProbe" width="320" height="240" style="display:none;"></canvas>
+
+  <button class="close-cam-btn" type="button" onclick="closeCameraModal()">×</button>
+    </div>
+    
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script>
     // --- MODAL CAMERA + GUIDELINE & AUTO-CROP ---
@@ -574,22 +646,194 @@
     }
 
     async function startCamera() {
-      video = document.getElementById('camera-video');
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        video.srcObject = stream;
-      } catch (e) {
-        alert("Failed to open camera: " + e.message);
-        closeCameraModal();
-      }
+  video = document.getElementById('camera-video');
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    video.srcObject = stream;
+
+    // ✅ pastikan video jalan & mula OCR live
+    await video.play().catch(() => {});
+    startOcrLive();
+
+  } catch (e) {
+    alert("Failed to open camera: " + e.message);
+    closeCameraModal();
+  }
     }
 
     function closeCameraModal() {
-      document.getElementById('cameraModal').style.display = 'none';
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-        stream = null;
+  document.getElementById('cameraModal').style.display = 'none';
+
+  // ✅ stop live indicator bila tutup
+  stopOcrLive();
+
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+    stream = null;
+  }
+    }
+
+    // ===== OCR LIVE ENGINE (SHARPNESS/CLARITY/CONTRAST/LIGHTING) + AUTOSNAP =====
+const OCR_LIVE = {
+  running: false,
+  rafId: null,
+  greenStreak: 0,
+  snapped: false,
+  lastTick: 0,
+  // ambang (Edos boleh adjust kemudian)
+  TH: {
+    sharpness: 85,      // naik = lebih strict
+    contrast: 32,       // naik = lebih strict
+    brightnessMin: 70,  // terlalu gelap
+    brightnessMax: 210  // terlalu terang (overexpose)
+  },
+  // berapa lama "semua hijau" diperlukan sebelum autosnap
+  NEED_GREEN_FRAMES: 12 // ~12 frames (lebih kurang 0.3-0.5s ikut device)
+};
+
+function setOcrItem(key, ok){
+  const el = document.querySelector(`#ocrLivePanel .ocr-item[data-key="${key}"]`);
+  if (!el) return;
+  el.classList.toggle("good", !!ok);
+  el.classList.toggle("bad", !ok);
+}
+
+function calcStats(gray){
+  let sum = 0, sum2 = 0;
+  const n = gray.length;
+  for (let i=0;i<n;i++){
+    const v = gray[i];
+    sum += v; sum2 += v*v;
+  }
+  const mean = sum / n;
+  const variance = (sum2 / n) - (mean*mean);
+  const std = Math.sqrt(Math.max(0, variance)); // RMS contrast
+  return { mean, std };
+}
+
+// laplacian variance (sharpness indicator)
+function calcSharpness(gray, w, h){
+  let sum = 0, sum2 = 0, n = 0;
+  for (let y = 1; y < h-1; y++){
+    const row = y*w;
+    for (let x = 1; x < w-1; x++){
+      const i = row + x;
+      const lap = (4*gray[i] - gray[i-1] - gray[i+1] - gray[i-w] - gray[i+w]);
+      sum += lap;
+      sum2 += lap*lap;
+      n++;
+    }
+  }
+  const mean = sum / n;
+  const variance = (sum2 / n) - (mean*mean);
+  return variance;
+}
+
+function getGrayFrame(videoEl, canvasEl){
+  const ctx = canvasEl.getContext("2d", { willReadFrequently: true });
+  const w = canvasEl.width, h = canvasEl.height;
+  ctx.drawImage(videoEl, 0, 0, w, h);
+
+  const data = ctx.getImageData(0, 0, w, h).data;
+  const gray = new Uint8Array(w*h);
+
+  for (let i=0, p=0; i<data.length; i+=4, p++){
+    const r = data[i], g = data[i+1], b = data[i+2];
+    gray[p] = (0.2126*r + 0.7152*g + 0.0722*b) | 0;
+  }
+  return { gray, w, h };
+}
+
+function startOcrLive(){
+  const videoEl = document.getElementById("camera-video");
+  const canvasEl = document.getElementById("ocrProbe");
+  const guidelineEl = document.getElementById("ocrGuideline");
+  if (!videoEl || !canvasEl) return;
+
+  OCR_LIVE.running = true;
+  OCR_LIVE.greenStreak = 0;
+  OCR_LIVE.snapped = false;
+
+  // reset UI merah
+  setOcrItem("sharp", false);
+  setOcrItem("clarity", false);
+  setOcrItem("contrast", false);
+  setOcrItem("light", false);
+  if (guidelineEl) guidelineEl.classList.remove("ocr-ready");
+
+  const loop = () => {
+    if (!OCR_LIVE.running) return;
+
+    // throttle sikit supaya tak berat (≈ 12-15fps)
+    const now = performance.now();
+    if (now - OCR_LIVE.lastTick < 70) {
+      OCR_LIVE.rafId = requestAnimationFrame(loop);
+      return;
+    }
+    OCR_LIVE.lastTick = now;
+
+    if (videoEl.readyState >= 2 && !videoEl.paused && !videoEl.ended) {
+      const { gray, w, h } = getGrayFrame(videoEl, canvasEl);
+      const sharp = calcSharpness(gray, w, h);
+      const { mean, std } = calcStats(gray);
+
+      const okSharp = sharp >= OCR_LIVE.TH.sharpness;
+      const okContrast = std >= OCR_LIVE.TH.contrast;
+      const okLight = (mean >= OCR_LIVE.TH.brightnessMin) && (mean <= OCR_LIVE.TH.brightnessMax);
+
+      // clarity = gabungan praktikal
+      const okClarity = okSharp && okContrast && okLight;
+
+      setOcrItem("sharp", okSharp);
+      setOcrItem("contrast", okContrast);
+      setOcrItem("light", okLight);
+      setOcrItem("clarity", okClarity);
+
+      const allGreen = okSharp && okClarity && okContrast && okLight;
+
+      if (allGreen) {
+        OCR_LIVE.greenStreak++;
+        if (guidelineEl) guidelineEl.classList.add("ocr-ready");
+
+        // autosnap sekali sahaja bila cukup streak
+        if (!OCR_LIVE.snapped && OCR_LIVE.greenStreak >= OCR_LIVE.NEED_GREEN_FRAMES) {
+          OCR_LIVE.snapped = true;
+
+          // ✅ autosnap guna function sedia ada (manual tetap boleh)
+          // kecil delay bagi glow nampak sekejap
+          setTimeout(() => {
+            // jika user belum tutup modal
+            if (OCR_LIVE.running) captureImage();
+          }, 180);
+        }
+      } else {
+        OCR_LIVE.greenStreak = 0;
+        if (guidelineEl) guidelineEl.classList.remove("ocr-ready");
       }
+    }
+
+    OCR_LIVE.rafId = requestAnimationFrame(loop);
+  };
+
+  cancelAnimationFrame(OCR_LIVE.rafId);
+  OCR_LIVE.rafId = requestAnimationFrame(loop);
+}
+
+function stopOcrLive(){
+  OCR_LIVE.running = false;
+  if (OCR_LIVE.rafId) cancelAnimationFrame(OCR_LIVE.rafId);
+  OCR_LIVE.rafId = null;
+  OCR_LIVE.greenStreak = 0;
+  OCR_LIVE.snapped = false;
+
+  const guidelineEl = document.getElementById("ocrGuideline");
+  if (guidelineEl) guidelineEl.classList.remove("ocr-ready");
+
+  // reset list merah
+  setOcrItem("sharp", false);
+  setOcrItem("clarity", false);
+  setOcrItem("contrast", false);
+  setOcrItem("light", false);
     }
 
     // === MODE A: GRAYSCALE + CONTRAST ENHANCEMENT ===
