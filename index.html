@@ -260,14 +260,16 @@
     align-items: center;
     flex-direction: column;
   }
-  .camera-container {
-    position: relative;
-    width: 94vw;
-    max-width: 400px;
-    aspect-ratio: 4/3;
-    background: #000;
-    border-radius: 14px;
-    overflow: hidden;
+  .camera-container{
+  position: relative;
+  width: 94vw;
+  max-width: 400px;
+  aspect-ratio: 4/3;
+  background: #000;
+  border-radius: 14px;
+  overflow: hidden;
+
+  transform: translateY(-12px);
   }
   #camera-video {
     width: 100%;
@@ -327,6 +329,20 @@
   @media (max-width: 500px) {
     .camera-container { max-width: 98vw; }
   }
+    #cameraModal .capture-btn-3d{
+  position: fixed;     /* 👈 penting */
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 999999;
+    }
+    #ocrLivePanel{
+  position: fixed;   /* 👈 lock ke modal/screen */
+  left: 10px;
+  bottom: 90px;      /* 👈 elak overlap snap button */
+  z-index: 9999;
+  pointer-events: none;
+    }
   .spinner,
   .loader {
     display: inline-block;
