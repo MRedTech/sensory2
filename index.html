@@ -350,6 +350,99 @@
     50%  { transform: rotate(180deg); }
     100% { transform: rotate(360deg); }
   }
+  /* ===== OCR LIVE INDICATOR (NO BG / NO BORDER) ===== */
+.ocr-panel{
+  position:absolute;
+  left:10px;
+  bottom:10px;
+  z-index:60;
+  pointer-events:none;
+  user-select:none;
+}
+
+.ocr-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:6px 0;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.6px;
+  text-transform:uppercase;
+}
+
+.ocr-item .dot{
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  display:inline-block;
+}
+
+/* Merah + Hijau (dot + text sama-sama tukar) */
+.ocr-item.bad{ color:#ff3b3b; }
+.ocr-item.bad .dot{ background:#ff3b3b; box-shadow:0 0 12px rgba(255,59,59,.65); }
+
+.ocr-item.good{ color:#16c172; }
+.ocr-item.good .dot{ background:#16c172; box-shadow:0 0 12px rgba(22,193,114,.85); }
+
+/* ===== Guideline: Google colors + glow bila semua hijau ===== */
+.guideline.ocr-ready{
+  animation: ocrGoogleBorder 1.4s linear infinite, ocrGlow 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes ocrGoogleBorder{
+  0%   { border-color:#34A853; }  /* green */
+  25%  { border-color:#FBBC05; }  /* yellow */
+  50%  { border-color:#4285F4; }  /* blue */
+  75%  { border-color:#EA4335; }  /* red */
+  100% { border-color:#34A853; }
+}
+@keyframes ocrGlow{
+  0%   { box-shadow: 0 0 0 rgba(0,0,0,0); }
+  100% { box-shadow: 0 0 26px rgba(255,255,255,.35); }
+}
+/* ===== WRAP supaya indicator boleh duduk luar container ===== */
+.camera-wrap{
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ✅ Indicator bawah kiri LUAR camera-container */
+#ocrLivePanel.ocr-panel{
+  position: absolute !important;
+  left: 12px !important;
+  top: calc(100% - 82px) !important; /* 👈 adjust naik/turun ikut sedap */
+  z-index: 9999;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Label OCR QUALITY */
+.ocr-title{
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+  color: #ffffff;
+  text-shadow: 0 1px 6px rgba(0,0,0,.55);
+}
+
+/* ✅ Snap button betul-betul tengah bawah container */
+.camera-wrap .capture-btn-3d{
+  position: static !important; /* buang fixed lama */
+  margin-top: 14px;
+  z-index: 999999;
+}
+
+/* ✅ Matikan rule lama yang buat fixed (kalau masih wujud) */
+#cameraModal .capture-btn-3d{
+  position: static !important;
+  left: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+}
   </style>
 </head>
 <body>
@@ -554,13 +647,30 @@
 
   <!-- === MODAL KAMERA UNTUK GUIDELINE === -->
   <div id="cameraModal" class="camera-modal" style="display:none;">
-    <div class="camera-container">
-      <video id="camera-video" autoplay playsinline></video>
-      <div class="guideline"></div>
-      <button class="close-cam-btn" type="button" onclick="closeCameraModal()">×</button>
-    </div>
-    <button class="capture-btn-3d" type="button" onclick="captureImage()"></button>
+    <div class="camera-wrap">
+  <div class="camera-container">
+    <video id="camera-video" autoplay playsinline></video>
+
+    <!-- guideline -->
+    <div class="guideline" id="ocrGuideline"></div>
+
+    <canvas id="ocrProbe" width="320" height="240" style="display:none;"></canvas>
+
+    <button class="close-cam-btn" type="button" onclick="closeCameraModal()">×</button>
   </div>
+
+  <!-- ✅ INDICATOR DI LUAR CONTAINER (BAWAH KIRI) -->
+  <div id="ocrLivePanel" class="ocr-panel">
+    <div class="ocr-title">OCR QUALITY</div>
+    <div class="ocr-item bad" data-key="sharp"><span class="dot"></span><span class="label">SHARPNESS</span></div>
+    <div class="ocr-item bad" data-key="clarity"><span class="dot"></span><span class="label">CLARITY</span></div>
+    <div class="ocr-item bad" data-key="contrast"><span class="dot"></span><span class="label">CONTRAST</span></div>
+    <div class="ocr-item bad" data-key="light"><span class="dot"></span><span class="label">LIGHTING</span></div>
+  </div>
+
+  <!-- ✅ SNAP BUTTON MANUAL (TENGAH BAWAH CONTAINER) -->
+  <button type="button" class="capture-btn-3d" onclick="captureImage()">SNAP</button>
+    </div>
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script>
@@ -574,23 +684,165 @@
     }
 
     async function startCamera() {
-      video = document.getElementById('camera-video');
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        video.srcObject = stream;
-      } catch (e) {
-        alert("Failed to open camera: " + e.message);
-        closeCameraModal();
-      }
+  video = document.getElementById('camera-video');
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    video.srcObject = stream;
+
+    await video.play().catch(() => {});
+    startOcrLive();
+
+  } catch (e) {
+    alert("Failed to open camera: " + e.message);
+    closeCameraModal();
+  }
     }
 
     function closeCameraModal() {
-      document.getElementById('cameraModal').style.display = 'none';
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-        stream = null;
+  document.getElementById('cameraModal').style.display = 'none';
+
+  stopOcrLive(); // ✅ stop live indicator bila tutup
+
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+    stream = null;
+  }
+    }
+
+    // ===== OCR LIVE ENGINE (NO AUTOSNAP) =====
+const OCR_LIVE = {
+  running: false,
+  rafId: null,
+  lastTick: 0,
+  TH: {
+    sharpness: 85,      // naik = lebih strict
+    contrast: 32,       // naik = lebih strict
+    brightnessMin: 70,  // terlalu gelap
+    brightnessMax: 210  // terlalu terang
+  }
+};
+
+function setOcrItem(key, ok){
+  const el = document.querySelector(`#ocrLivePanel .ocr-item[data-key="${key}"]`);
+  if (!el) return;
+  el.classList.toggle("good", !!ok);
+  el.classList.toggle("bad", !ok);
+}
+
+function calcStats(gray){
+  let sum = 0, sum2 = 0;
+  const n = gray.length;
+  for (let i=0;i<n;i++){
+    const v = gray[i];
+    sum += v; sum2 += v*v;
+  }
+  const mean = sum / n;
+  const variance = (sum2 / n) - (mean*mean);
+  const std = Math.sqrt(Math.max(0, variance)); // RMS contrast
+  return { mean, std };
+}
+
+function calcSharpness(gray, w, h){
+  let sum = 0, sum2 = 0, n = 0;
+  for (let y = 1; y < h-1; y++){
+    const row = y*w;
+    for (let x = 1; x < w-1; x++){
+      const i = row + x;
+      const lap = (4*gray[i] - gray[i-1] - gray[i+1] - gray[i-w] - gray[i+w]);
+      sum += lap;
+      sum2 += lap*lap;
+      n++;
+    }
+  }
+  const mean = sum / n;
+  const variance = (sum2 / n) - (mean*mean);
+  return variance;
+}
+
+function getGrayFrame(videoEl, canvasEl){
+  const ctx = canvasEl.getContext("2d", { willReadFrequently: true });
+  const w = canvasEl.width, h = canvasEl.height;
+  ctx.drawImage(videoEl, 0, 0, w, h);
+
+  const data = ctx.getImageData(0, 0, w, h).data;
+  const gray = new Uint8Array(w*h);
+
+  for (let i=0, p=0; i<data.length; i+=4, p++){
+    const r = data[i], g = data[i+1], b = data[i+2];
+    gray[p] = (0.2126*r + 0.7152*g + 0.0722*b) | 0;
+  }
+  return { gray, w, h };
+}
+
+function startOcrLive(){
+  const videoEl = document.getElementById("camera-video");
+  const canvasEl = document.getElementById("ocrProbe");
+  const guidelineEl = document.getElementById("ocrGuideline");
+  if (!videoEl || !canvasEl) return;
+
+  OCR_LIVE.running = true;
+  OCR_LIVE.lastTick = 0;
+
+  // reset merah
+  setOcrItem("sharp", false);
+  setOcrItem("clarity", false);
+  setOcrItem("contrast", false);
+  setOcrItem("light", false);
+  if (guidelineEl) guidelineEl.classList.remove("ocr-ready");
+
+  const loop = () => {
+    if (!OCR_LIVE.running) return;
+
+    // ringan: ~12-15fps
+    const now = performance.now();
+    if (now - OCR_LIVE.lastTick < 70) {
+      OCR_LIVE.rafId = requestAnimationFrame(loop);
+      return;
+    }
+    OCR_LIVE.lastTick = now;
+
+    if (videoEl.readyState >= 2 && !videoEl.paused && !videoEl.ended) {
+      const { gray, w, h } = getGrayFrame(videoEl, canvasEl);
+      const sharp = calcSharpness(gray, w, h);
+      const { mean, std } = calcStats(gray);
+
+      const okSharp = sharp >= OCR_LIVE.TH.sharpness;
+      const okContrast = std >= OCR_LIVE.TH.contrast;
+      const okLight = (mean >= OCR_LIVE.TH.brightnessMin) && (mean <= OCR_LIVE.TH.brightnessMax);
+      const okClarity = okSharp && okContrast && okLight;
+
+      setOcrItem("sharp", okSharp);
+      setOcrItem("contrast", okContrast);
+      setOcrItem("light", okLight);
+      setOcrItem("clarity", okClarity);
+
+      // bila semua hijau → guideline google glow
+      const allGreen = okSharp && okClarity && okContrast && okLight;
+      if (guidelineEl) {
+        guidelineEl.classList.toggle("ocr-ready", allGreen);
       }
     }
+
+    OCR_LIVE.rafId = requestAnimationFrame(loop);
+  };
+
+  cancelAnimationFrame(OCR_LIVE.rafId);
+  OCR_LIVE.rafId = requestAnimationFrame(loop);
+}
+
+function stopOcrLive(){
+  OCR_LIVE.running = false;
+  if (OCR_LIVE.rafId) cancelAnimationFrame(OCR_LIVE.rafId);
+  OCR_LIVE.rafId = null;
+
+  const guidelineEl = document.getElementById("ocrGuideline");
+  if (guidelineEl) guidelineEl.classList.remove("ocr-ready");
+
+  setOcrItem("sharp", false);
+  setOcrItem("clarity", false);
+  setOcrItem("contrast", false);
+  setOcrItem("light", false);
+}
 
     // === MODE A: GRAYSCALE + CONTRAST ENHANCEMENT ===
     function applyGrayscaleContrast(canvas) {
