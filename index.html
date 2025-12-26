@@ -668,7 +668,6 @@
   <div class="ocr-item bad" data-key="light"><span class="dot"></span><span>LIGHTING</span></div>
   <div class="ocr-item bad" data-key="contrast"><span class="dot"></span><span>CONTRAST</span></div>
   <div class="ocr-item bad" data-key="glare"><span class="dot"></span><span>GLARE / SHADOW</span></div>
-  <div class="ocr-item bad" data-key="align"><span class="dot"></span><span>ALIGNMENT</span></div>
   <div class="ocr-item bad" data-key="clarity"><span class="dot"></span><span>CLARITY</span></div>
       </div>
   
@@ -726,8 +725,7 @@ const OCR_LIVE = {
   stabilityAvgDiff: 7.5,
   stabilityDelta: 10,     
   glareWhitePct: 0.06,   
-  shadowBlackPct: 0.14,  
-  alignEdgeRatio: 0.35  
+  shadowBlackPct: 0.14  
   }
 };
 
@@ -838,7 +836,6 @@ function startOcrLive(){
   setOcrItem("light", false);
   setOcrItem("contrast", false);
   setOcrItem("glare", false);
-  setOcrItem("align", false);
   setOcrItem("clarity", false);
 
   lastFrameGray = null; 
@@ -878,10 +875,7 @@ function startOcrLive(){
       const shadowPct = pctExtreme(gray, "black");
       const okGlare = (glarePct < OCR_LIVE.TH.glareWhitePct) && (shadowPct < OCR_LIVE.TH.shadowBlackPct);
 
-      // 6) ALIGNMENT (ringkas)
-      const okAlign = (mean > 0) ? ((std / mean) > OCR_LIVE.TH.alignEdgeRatio) : false;
-
-      // 7) CLARITY (summary)
+      // 6) CLARITY (summary)
       const okClarity = okSharp && okStable && okLight && okContrast && okGlare;
 
       // update UI ikut susunan penting
@@ -890,11 +884,10 @@ function startOcrLive(){
       setOcrItem("light", okLight);
       setOcrItem("contrast", okContrast);
       setOcrItem("glare", okGlare);
-      setOcrItem("align", okAlign);
       setOcrItem("clarity", okClarity);
 
       // bila semua hijau → guideline google glow
-      const allGreen = okSharp && okStable && okLight && okContrast && okGlare && okAlign && okClarity;
+      const allGreen = okSharp && okStable && okLight && okContrast && okGlare && okClarity;
       if (guidelineEl) guidelineEl.classList.toggle("ocr-ready", allGreen);
     }
 
@@ -919,7 +912,6 @@ function stopOcrLive(){
   setOcrItem("light", false);
   setOcrItem("contrast", false);
   setOcrItem("glare", false);
-  setOcrItem("align", false);
   setOcrItem("clarity", false);
 }
 
