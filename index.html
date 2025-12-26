@@ -815,15 +815,15 @@ function startOcrLive(){
   OCR_LIVE.running = true;
   OCR_LIVE.lastTick = 0;
 
-  // reset merah
   // reset merah (SEMUA OCR INDICATOR)
-setOcrItem("sharp", false);
-setOcrItem("stable", false);
-setOcrItem("light", false);
-setOcrItem("contrast", false);
-setOcrItem("glare", false);
-setOcrItem("align", false);
-setOcrItem("clarity", false);
+  setOcrItem("sharp", false);
+  setOcrItem("stable", false);
+  setOcrItem("light", false);
+  setOcrItem("contrast", false);
+  setOcrItem("glare", false);
+  setOcrItem("align", false);
+  setOcrItem("clarity", false);
+
   if (guidelineEl) guidelineEl.classList.remove("ocr-ready");
 
   const loop = () => {
@@ -842,50 +842,49 @@ setOcrItem("clarity", false);
       const sharp = calcSharpness(gray, w, h);
       const { mean, std } = calcStats(gray);
 
-// 1) SHARPNESS
-const okSharp = sharp >= OCR_LIVE.TH.sharpness;
+      // 1) SHARPNESS
+      const okSharp = sharp >= OCR_LIVE.TH.sharpness;
 
-// 2) STABILITY (need helper + lastFrameGray global)
-const okStable = calcStability(gray);
+      // 2) STABILITY
+      const okStable = calcStability(gray);
 
-// 3) LIGHTING
-const okLight = (mean >= OCR_LIVE.TH.brightnessMin) && (mean <= OCR_LIVE.TH.brightnessMax);
+      // 3) LIGHTING
+      const okLight = (mean >= OCR_LIVE.TH.brightnessMin) && (mean <= OCR_LIVE.TH.brightnessMax);
 
-// 4) CONTRAST
-const okContrast = std >= OCR_LIVE.TH.contrast;
+      // 4) CONTRAST
+      const okContrast = std >= OCR_LIVE.TH.contrast;
 
-// 5) GLARE / SHADOW
-const glarePct  = pctExtreme(gray, "white");
-const shadowPct = pctExtreme(gray, "black");
-const okGlare = (glarePct < OCR_LIVE.TH.glareWhitePct) && (shadowPct < OCR_LIVE.TH.shadowBlackPct);
+      // 5) GLARE / SHADOW
+      const glarePct  = pctExtreme(gray, "white");
+      const shadowPct = pctExtreme(gray, "black");
+      const okGlare = (glarePct < OCR_LIVE.TH.glareWhitePct) && (shadowPct < OCR_LIVE.TH.shadowBlackPct);
 
-// 6) ALIGNMENT (ringkas, ringan)
-const okAlign = (mean > 0) ? ((std / mean) > OCR_LIVE.TH.alignEdgeRatio) : false;
+      // 6) ALIGNMENT (ringkas)
+      const okAlign = (mean > 0) ? ((std / mean) > OCR_LIVE.TH.alignEdgeRatio) : false;
 
-// 7) CLARITY (summary)
-const okClarity = okSharp && okStable && okLight && okContrast && okGlare;
+      // 7) CLARITY (summary)
+      const okClarity = okSharp && okStable && okLight && okContrast && okGlare;
 
-// update UI ikut susunan penting
-setOcrItem("sharp",  okSharp);
-setOcrItem("stable", okStable);
-setOcrItem("light",  okLight);
-setOcrItem("contrast", okContrast);
-setOcrItem("glare",  okGlare);
-setOcrItem("align",  okAlign);
-setOcrItem("clarity", okClarity);
+      // update UI ikut susunan penting
+      setOcrItem("sharp", okSharp);
+      setOcrItem("stable", okStable);
+      setOcrItem("light", okLight);
+      setOcrItem("contrast", okContrast);
+      setOcrItem("glare", okGlare);
+      setOcrItem("align", okAlign);
+      setOcrItem("clarity", okClarity);
 
-// bila semua hijau → guideline google glow
-const allGreen = okSharp && okStable && okLight && okContrast && okGlare && okAlign && okClarity;
-if (guidelineEl) guidelineEl.classList.toggle("ocr-ready", allGreen);
-      }
+      // bila semua hijau → guideline google glow
+      const allGreen = okSharp && okStable && okLight && okContrast && okGlare && okAlign && okClarity;
+      if (guidelineEl) guidelineEl.classList.toggle("ocr-ready", allGreen);
     }
 
     OCR_LIVE.rafId = requestAnimationFrame(loop);
   };
 
-  cancelAnimationFrame(OCR_LIVE.rafId);
+  if (OCR_LIVE.rafId) cancelAnimationFrame(OCR_LIVE.rafId);
   OCR_LIVE.rafId = requestAnimationFrame(loop);
-}
+  }
 
 function stopOcrLive(){
   OCR_LIVE.running = false;
@@ -895,10 +894,14 @@ function stopOcrLive(){
   const guidelineEl = document.getElementById("ocrGuideline");
   if (guidelineEl) guidelineEl.classList.remove("ocr-ready");
 
+  // reset merah (SEMUA OCR INDICATOR)
   setOcrItem("sharp", false);
-  setOcrItem("clarity", false);
-  setOcrItem("contrast", false);
+  setOcrItem("stable", false);
   setOcrItem("light", false);
+  setOcrItem("contrast", false);
+  setOcrItem("glare", false);
+  setOcrItem("align", false);
+  setOcrItem("clarity", false);
 }
 
     // === MODE A: GRAYSCALE + CONTRAST ENHANCEMENT ===
