@@ -364,7 +364,7 @@
   display:flex;
   align-items:center;
   gap:8px;
-  margin:6px 0;
+  margin:5px 0;
   font-size:12px;
   font-weight:800;
   letter-spacing:.6px;
@@ -660,14 +660,18 @@
   </div>
 
   <!-- ✅ INDICATOR DI LUAR CONTAINER (BAWAH KIRI) -->
-  <div id="ocrLivePanel" class="ocr-panel">
-    <div class="ocr-title">OCR QUALITY</div>
-    <div class="ocr-item bad" data-key="sharp"><span class="dot"></span><span class="label">SHARPNESS</span></div>
-    <div class="ocr-item bad" data-key="clarity"><span class="dot"></span><span class="label">CLARITY</span></div>
-    <div class="ocr-item bad" data-key="contrast"><span class="dot"></span><span class="label">CONTRAST</span></div>
-    <div class="ocr-item bad" data-key="light"><span class="dot"></span><span class="label">LIGHTING</span></div>
-  </div>
+      <div id="ocrLivePanel" class="ocr-panel">
+  <div class="ocr-title">OCR QUALITY</div>
 
+  <div class="ocr-item bad" data-key="sharp"><span class="dot"></span><span>SHARPNESS</span></div>
+  <div class="ocr-item bad" data-key="stable"><span class="dot"></span><span>STABILITY</span></div>
+  <div class="ocr-item bad" data-key="light"><span class="dot"></span><span>LIGHTING</span></div>
+  <div class="ocr-item bad" data-key="contrast"><span class="dot"></span><span>CONTRAST</span></div>
+  <div class="ocr-item bad" data-key="glare"><span class="dot"></span><span>GLARE / SHADOW</span></div>
+  <div class="ocr-item bad" data-key="align"><span class="dot"></span><span>ALIGNMENT</span></div>
+  <div class="ocr-item bad" data-key="clarity"><span class="dot"></span><span>CLARITY</span></div>
+      </div>
+  
   <!-- ✅ SNAP BUTTON MANUAL (TENGAH BAWAH CONTAINER) -->
   <button type="button" class="capture-btn-3d" onclick="captureImage()"></button>
     </div>
@@ -715,10 +719,14 @@ const OCR_LIVE = {
   rafId: null,
   lastTick: 0,
   TH: {
-    sharpness: 100,      // naik = lebih strict
-    contrast: 50,       // naik = lebih strict
-    brightnessMin: 70,  // terlalu gelap
-    brightnessMax: 210  // terlalu terang
+  sharpness: 85,
+  contrast: 32,
+  brightnessMin: 70,
+  brightnessMax: 210,
+  stabilityDelta: 6,     // frame change kecil = stabil
+  glareWhitePct: 0.12,   // >12% pixel putih = silau
+  shadowBlackPct: 0.18,  // >18% pixel hitam = bayang
+  alignEdgeRatio: 0.6    // anggaran alignment
   }
 };
 
@@ -773,6 +781,30 @@ function getGrayFrame(videoEl, canvasEl){
   }
   return { gray, w, h };
 }
+    
+  function pctExtreme(gray, mode){
+  let c = 0;
+  for (let i=0;i<gray.length;i++){
+    if (mode==="white" && gray[i] > 245) c++;
+    if (mode==="black" && gray[i] < 10) c++;
+  }
+  return c / gray.length;
+}
+
+let lastFrameGray = null;
+
+function calcStability(gray){
+  if (!lastFrameGray){
+    lastFrameGray = gray.slice();
+    return false;
+  }
+  let diff = 0;
+  for (let i=0;i<gray.length;i+=20){
+    diff += Math.abs(gray[i] - lastFrameGray[i]);
+  }
+  lastFrameGray = gray.slice();
+  return diff < OCR_LIVE.TH.stabilityDelta;
+}
 
 function startOcrLive(){
   const videoEl = document.getElementById("camera-video");
@@ -784,10 +816,14 @@ function startOcrLive(){
   OCR_LIVE.lastTick = 0;
 
   // reset merah
-  setOcrItem("sharp", false);
-  setOcrItem("clarity", false);
-  setOcrItem("contrast", false);
-  setOcrItem("light", false);
+  // reset merah (SEMUA OCR INDICATOR)
+setOcrItem("sharp", false);
+setOcrItem("stable", false);
+setOcrItem("light", false);
+setOcrItem("contrast", false);
+setOcrItem("glare", false);
+setOcrItem("align", false);
+setOcrItem("clarity", false);
   if (guidelineEl) guidelineEl.classList.remove("ocr-ready");
 
   const loop = () => {
@@ -806,20 +842,41 @@ function startOcrLive(){
       const sharp = calcSharpness(gray, w, h);
       const { mean, std } = calcStats(gray);
 
-      const okSharp = sharp >= OCR_LIVE.TH.sharpness;
-      const okContrast = std >= OCR_LIVE.TH.contrast;
-      const okLight = (mean >= OCR_LIVE.TH.brightnessMin) && (mean <= OCR_LIVE.TH.brightnessMax);
-      const okClarity = okSharp && okContrast && okLight;
+// 1) SHARPNESS
+const okSharp = sharp >= OCR_LIVE.TH.sharpness;
 
-      setOcrItem("sharp", okSharp);
-      setOcrItem("contrast", okContrast);
-      setOcrItem("light", okLight);
-      setOcrItem("clarity", okClarity);
+// 2) STABILITY (need helper + lastFrameGray global)
+const okStable = calcStability(gray);
 
-      // bila semua hijau → guideline google glow
-      const allGreen = okSharp && okClarity && okContrast && okLight;
-      if (guidelineEl) {
-        guidelineEl.classList.toggle("ocr-ready", allGreen);
+// 3) LIGHTING
+const okLight = (mean >= OCR_LIVE.TH.brightnessMin) && (mean <= OCR_LIVE.TH.brightnessMax);
+
+// 4) CONTRAST
+const okContrast = std >= OCR_LIVE.TH.contrast;
+
+// 5) GLARE / SHADOW
+const glarePct  = pctExtreme(gray, "white");
+const shadowPct = pctExtreme(gray, "black");
+const okGlare = (glarePct < OCR_LIVE.TH.glareWhitePct) && (shadowPct < OCR_LIVE.TH.shadowBlackPct);
+
+// 6) ALIGNMENT (ringkas, ringan)
+const okAlign = (mean > 0) ? ((std / mean) > OCR_LIVE.TH.alignEdgeRatio) : false;
+
+// 7) CLARITY (summary)
+const okClarity = okSharp && okStable && okLight && okContrast && okGlare;
+
+// update UI ikut susunan penting
+setOcrItem("sharp",  okSharp);
+setOcrItem("stable", okStable);
+setOcrItem("light",  okLight);
+setOcrItem("contrast", okContrast);
+setOcrItem("glare",  okGlare);
+setOcrItem("align",  okAlign);
+setOcrItem("clarity", okClarity);
+
+// bila semua hijau → guideline google glow
+const allGreen = okSharp && okStable && okLight && okContrast && okGlare && okAlign && okClarity;
+if (guidelineEl) guidelineEl.classList.toggle("ocr-ready", allGreen);
       }
     }
 
