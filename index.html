@@ -723,6 +723,7 @@ const OCR_LIVE = {
   contrast: 30,
   brightnessMin: 70,
   brightnessMax: 210,
+  stabilityAvgDiff: 7.5,
   stabilityDelta: 10,     
   glareWhitePct: 0.06,   
   shadowBlackPct: 0.14,  
@@ -802,14 +803,24 @@ let lastFrameGray = null;
 function calcStability(gray){
   if (!lastFrameGray){
     lastFrameGray = gray.slice();
-    return false;
+    return false; 
   }
+
   let diff = 0;
-  for (let i=0;i<gray.length;i+=20){
+  let samples = 0;
+
+  for (let i = 0; i < gray.length; i += 30){
     diff += Math.abs(gray[i] - lastFrameGray[i]);
+    samples++;
   }
+
   lastFrameGray = gray.slice();
-  return diff < OCR_LIVE.TH.stabilityDelta;
+
+  // ✅ normalize: purata perubahan (0-255)
+  const avgDiff = diff / Math.max(1, samples);
+
+  // ✅ threshold sederhana strict
+  return avgDiff <= OCR_LIVE.TH.stabilityAvgDiff;
 }
 
 function startOcrLive(){
@@ -829,6 +840,8 @@ function startOcrLive(){
   setOcrItem("glare", false);
   setOcrItem("align", false);
   setOcrItem("clarity", false);
+
+  lastFrameGray = null; 
 
   if (guidelineEl) guidelineEl.classList.remove("ocr-ready");
 
